@@ -1,0 +1,85 @@
+graph TB
+    subgraph "Presentation Layer"
+        API[FastAPI Controllers]
+    end
+
+    subgraph "Application Layer"
+        UC1[RegisterAccount<br/>Use Case]
+        UC2[ActivateAccount<br/>Use Case]
+        EH[AccountCreatedHandler<br/>Event Handler]
+        IEmail[EmailService<br/>Interface]
+    end
+
+    subgraph "Domain Layer"
+        Account[Account<br/>Entity]
+        Email[Email<br/>Value Object]
+        Password[Password<br/>Value Object]
+        ActivationCode[ActivationCode<br/>Value Object]
+        Event[AccountCreated<br/>Domain Event]
+        IAccountRepo[AccountRepository<br/>Interface]
+        ICodeRepo[ActivationCodeRepository<br/>Interface]
+    end
+
+    subgraph "Infrastructure Layer"
+        PostgresAccountRepo[PostgresAccountRepository]
+        PostgresCodeRepo[PostgresActivationCodeRepository]
+        ConsoleEmail[ConsoleEmailService]
+        DB[(PostgreSQL)]
+    end
+
+    subgraph "External"
+        User((User))
+        SMTP[Email Service<br/>Third Party]
+    end
+
+    %% User interactions
+    User -->|POST /accounts| API
+    User -->|POST /accounts/activate| API
+
+    %% API to Use Cases
+    API --> UC1
+    API --> UC2
+
+    %% Use Cases to Domain
+    UC1 --> Account
+    UC1 --> IAccountRepo
+    UC1 --> Event
+
+    UC2 --> IAccountRepo
+    UC2 --> ICodeRepo
+    UC2 --> Account
+
+    %% Event Handler
+    Event -.->|triggers| EH
+    EH --> ICodeRepo
+    EH --> IEmail
+    EH --> ActivationCode
+
+    %% Domain relationships
+    Account --> Email
+    Account --> Password
+    ActivationCode --> Email
+
+    %% Infrastructure implementations
+    IAccountRepo -.->|implements| PostgresAccountRepo
+    ICodeRepo -.->|implements| PostgresCodeRepo
+    IEmail -.->|implements| ConsoleEmail
+
+    %% Database
+    PostgresAccountRepo --> DB
+    PostgresCodeRepo --> DB
+
+    %% External service
+    ConsoleEmail -.->|simulates| SMTP
+    SMTP -.->|sends code| User
+
+    %% Styling
+    classDef domain fill:#ffd700,stroke:#333,stroke-width:2px
+    classDef application fill:#87ceeb,stroke:#333,stroke-width:2px
+    classDef infrastructure fill:#90ee90,stroke:#333,stroke-width:2px
+    classDef external fill:#ffb6c1,stroke:#333,stroke-width:2px
+
+    class Account,Email,Password,ActivationCode,Event,IAccountRepo,ICodeRepo domain
+    class UC1,UC2,EH,IEmail application
+    class PostgresAccountRepo,PostgresCodeRepo,ConsoleEmail,DB infrastructure
+    class User,SMTP external
