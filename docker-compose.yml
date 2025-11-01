@@ -1,0 +1,52 @@
+services:
+  api:
+    build:
+      context: .
+      target: development
+    container_name: user-registration-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=user_registration
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: user-registration-db
+    environment:
+      - POSTGRES_DB=user_registration
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

@@ -52,6 +52,9 @@ env.bak/
 venv.bak/
 .venv/
 
+# IA Assistant
+.claude/
+
 # IDE
 .idea/
 .vscode/
