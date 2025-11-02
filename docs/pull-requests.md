@@ -12,33 +12,32 @@ Incremental development plan following **vertical feature slices**. Each PR deli
 
 ## Infrastructure Foundation
 
-### Docker Infrastructure ⏳
-**Branch:** `feat/docker-setup`
+### Docker Infrastructure ✅
+**Branch:** `docker-setup`
 
-Setup containerized development environment.
+Setup containerized development environment with Poetry dependency management.
 
-**Deliverables:**
-- docker-compose.yml, Dockerfile, requirements.txt, .dockerignore, src/ structure
-
----
-
-### Code Quality Tools ⏳
-**Branch:** `feat/code-quality`
-
-Configure black, ruff, mypy.
-
-**Deliverables:**
-- pyproject.toml, requirements-dev.txt
+**Completed:**
+- ✅ Docker Compose with API + PostgreSQL services
+- ✅ Multi-stage Dockerfile (development + production targets)
+- ✅ Poetry 1.8.4 for dependency management
+- ✅ pyproject.toml with all dependencies and tool configurations
+- ✅ Code quality tools: black, ruff, mypy (configured)
+- ✅ Testing tools: pytest, pytest-asyncio, pytest-cov, httpx (configured)
+- ✅ Basic FastAPI app with GET /health endpoint
 
 ---
 
-### Testing Framework ⏳
-**Branch:** `feat/testing-framework`
+### Testing Structure ⏳
+**Branch:** `feat/testing-structure`
 
-Setup pytest with unit/integration structure.
+Create test directory structure and shared fixtures.
 
 **Deliverables:**
-- pytest.ini, conftest.py, tests/ structure
+- tests/ directory structure (unit/, integration/, e2e/)
+- conftest.py with shared fixtures (test client, database)
+- First integration test for /health endpoint
+- Validate all quality tools work (black, ruff, mypy, pytest)
 
 ---
 
@@ -48,17 +47,23 @@ Setup pytest with unit/integration structure.
 Automate quality checks and tests on PRs.
 
 **Deliverables:**
-- .github/workflows/ci.yml running quality tools + tests
+- .github/workflows/ci.yml running all checks
+- Jobs: lint (black, ruff), type-check (mypy), test (pytest)
+- Test coverage reporting
+- Docker build validation
 
 ---
 
-### FastAPI Foundation ⏳
-**Branch:** `feat/fastapi-setup`
+### Health Check DDD Refactoring ⏳
+**Branch:** `feat/health-check-ddd`
 
-Basic FastAPI app with health check.
+Refactor /health endpoint into proper DDD structure with shared bounded context.
 
 **Deliverables:**
-- src/main.py, config.py, GET /health endpoint + test
+- shared/infrastructure/http/ structure
+- Health check controller with proper dependency injection
+- Integration test for /health endpoint
+- Example of DDD structure for future features
 
 ---
 

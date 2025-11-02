@@ -127,10 +127,11 @@ Direct SQL queries using psycopg2 without Object-Relational Mapping.
 
 ### Core Technologies
 - **Python**: 3.13
+- **Dependency Management**: Poetry 1.8.4
 - **Web Framework**: FastAPI (routing, dependency injection)
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL 16
 - **Database Driver**: psycopg2 (raw SQL, no ORM)
-- **Testing**: pytest, httpx
+- **Testing**: pytest, pytest-asyncio, pytest-cov, httpx
 - **Code Quality**: black, ruff, mypy
 - **Containerization**: Docker, Docker Compose
 
@@ -313,17 +314,37 @@ tests/
 
 ## Development Workflow
 
+### Dependency Management
+
+This project uses **Poetry** for dependency management (like Composer for PHP or npm for Node.js).
+
+```bash
+# Install dependencies inside container
+docker-compose run --rm api poetry install
+
+# Add a new dependency
+docker-compose run --rm api poetry add <package>
+
+# Add a dev dependency
+docker-compose run --rm api poetry add --group dev <package>
+
+# Update dependencies
+docker-compose run --rm api poetry update
+```
+
 ### Code Quality Tools
+
+All tools are configured in `pyproject.toml`.
 
 ```bash
 # Format code
-black src tests
+docker-compose run --rm api poetry run black src tests
 
 # Lint code
-ruff check src tests
+docker-compose run --rm api poetry run ruff check src tests
 
 # Type checking
-mypy src
+docker-compose run --rm api poetry run mypy src
 ```
 
 ## License
