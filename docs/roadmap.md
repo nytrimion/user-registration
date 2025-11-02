@@ -1,6 +1,8 @@
-# Pull Requests Roadmap
+# Development Roadmap
 
-Incremental development plan following **vertical feature slices**. Each PR delivers a complete, testable increment of functionality.
+Incremental development plan following **vertical feature slices**.
+
+This roadmap tracks all planned pull requests (PRs) for the project. Each PR delivers a complete, testable increment of functionality, ensuring the codebase remains in a deployable state at all times.
 
 ## Status Legend
 - ⏳ Pending
