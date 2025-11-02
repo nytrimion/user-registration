@@ -90,4 +90,4 @@ def test_email_is_immutable() -> None:
     email = Email("user@example.com")
 
     with pytest.raises(AttributeError):
-        email.value = "hacker@malicious.com"
+        email.value = "hacker@malicious.com"  # type: ignore[misc]

@@ -88,4 +88,4 @@ def test_password_is_immutable() -> None:
     password = Password.from_plain_text("MySecurePassword123")
 
     with pytest.raises(AttributeError):
-        password.hashed_value = "hacked"
+        password.hashed_value = "hacked"  # type: ignore[misc]
