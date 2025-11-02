@@ -93,13 +93,18 @@ Email, Password, and AccountId value objects for account creation.
 
 ---
 
-### Domain - Account Entity ⏳
+### Domain - Account Entity ✅
 **Branch:** `feat/account-entity`
 
-Account aggregate root with creation logic.
+Account aggregate root with creation logic and DDD encapsulation.
 
-**Deliverables:**
-- Account entity with create() factory + unit tests
+**Completed:**
+- ✅ Account entity with @dataclass + @property for encapsulation
+- ✅ Account.create() factory method with UUID v7 generation
+- ✅ activate() method with business rule enforcement
+- ✅ Entity identity pattern (__eq__ by account_id, __hash__ support)
+- ✅ 19 unit tests with 100% coverage on Account entity
+- ✅ Encapsulation validated: properties raise AttributeError on direct modification
 
 ---
 
