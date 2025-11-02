@@ -257,6 +257,20 @@ CREATE TABLE account_activation_code (
 - Docker
 - Docker Compose
 
+### Environment Configuration
+
+The project uses environment variables for configuration. Default values are provided for development.
+
+```bash
+# (Optional) Copy environment template and customize
+cp .env.example .env
+
+# Edit .env if you want to change database credentials
+# nano .env
+```
+
+**Note:** The application works out-of-the-box with default values. Creating `.env` is optional.
+
 ### Running the Application
 
 ```bash

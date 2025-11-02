@@ -7,12 +7,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_NAME=user_registration
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
-      - ENVIRONMENT=development
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_NAME=${DATABASE_NAME:-user_registration}
+      - DATABASE_USER=${DATABASE_USER:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
@@ -27,9 +27,9 @@ services:
     image: postgres:16-alpine
     container_name: user-registration-db
     environment:
-      - POSTGRES_DB=user_registration
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=${DATABASE_NAME:-user_registration}
+      - POSTGRES_USER=${DATABASE_USER:-postgres}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
