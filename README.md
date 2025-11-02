@@ -8,8 +8,11 @@ Technical test implementation for account registration with email verification.
 - [Technical Stack](#technical-stack)
 - [Domain Design](#domain-design)
 - [API Endpoints](#api-endpoints)
+- [Database Schema](#database-schema)
 - [Getting Started](#getting-started)
 - [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Development Workflow](#development-workflow)
 
 ## Overview
 
@@ -87,6 +90,12 @@ Two distinct repositories with clear responsibilities:
 - Independent testing with dedicated mocks
 - Future evolution without coupling (e.g., code history, retry mechanisms)
 
+**Benefits:**
+- **Testability**: Mock each repository independently for faster, focused unit tests
+- **Evolvability**: Switch activation code storage (Redis, in-memory cache) without touching Account logic
+- **Performance**: Aggressive TTL/cleanup strategies for codes without impacting account data
+- **Team Collaboration**: Multiple developers can work on each repository without merge conflicts
+
 #### 2. Asynchronous Code Generation
 
 **Flow:**
@@ -99,19 +108,31 @@ Two distinct repositories with clear responsibilities:
 - Handles message broker latency gracefully
 - User gets maximum 60 seconds regardless of queue delays
 
-#### 3. Immutable Entities
+**Benefits:**
+- **Scalability**: Decouples account creation from email delivery (survives SMTP outages)
+- **Resilience**: Account creation succeeds even if email service temporarily fails
+- **User Experience**: Fast API response time (~50ms vs ~500ms with synchronous email)
+- **Observability**: Separate metrics and monitoring for account creation vs email delivery
+
+#### 3. DDD Encapsulation with @property
 
 **Pattern:**
 ```python
-# Entity methods return new instances
-activated_account = account.activate(code)
-repository.save(activated_account)
+# Entities are mutable but properties are encapsulated
+account.activate()  # Only way to change is_activated
+account.is_activated = True  # ❌ Raises AttributeError
+repository.save(account)
 ```
 
 **Rationale:**
-- No Active Record anti-pattern
-- Pure domain logic without infrastructure coupling
-- Thread-safe operations
+- Properties protected via `@property` without setters
+- Business rules enforced through domain methods only
+- No Active Record anti-pattern (repository handles persistence)
+
+**Benefits:**
+- **Invariant Protection**: Impossible to bypass business rules (e.g., activate twice)
+- **Explicitness**: Clear intent through method names (`activate()` vs property assignment)
+- **Maintainability**: Business logic changes isolated to entity methods
 
 #### 4. No ORM - Raw SQL
 
@@ -119,14 +140,24 @@ Direct SQL queries using psycopg2 without Object-Relational Mapping.
 
 **Rationale:**
 - Explicit control over database operations
-- Performance transparency
-- No "magic" abstractions
+- Performance transparency (no hidden queries)
+- No "magic" abstractions or auto-generated migrations
 - Demonstrates raw SQL proficiency
+
+**Benefits:**
+- **Performance**: No N+1 queries, predictable execution plans, explicit JOINs
+- **Debugging**: SQL logs directly usable in pgAdmin/psql for profiling
+- **Control**: Fine-grained transaction management and locking strategies (SELECT FOR UPDATE)
+- **Simplicity**: No migration auto-generation complexity
+
+**Trade-offs Considered:**
+- ❌ More boilerplate code (manual object mapping)
+- ✅ But: Total visibility and control crucial for production debugging
 
 ## Technical Stack
 
 ### Core Technologies
-- **Python**: 3.13
+- **Python**: 3.14
 - **Dependency Management**: Poetry 1.8.4
 - **Web Framework**: FastAPI (routing, dependency injection)
 - **Database**: PostgreSQL 16
@@ -304,27 +335,99 @@ docker-compose run --rm api pytest --cov=src --cov-report=html
 
 ## Testing Strategy
 
+### Coverage Goals
+- **Target**: 90%+ coverage on business logic
+- **Current**: 99% coverage (tracked via Codecov on CI)
+- **Excluded**: `__repr__`, `if TYPE_CHECKING`, `if __name__ == "__main__"`
+
 ### Unit Tests
-- Domain entities and value objects (pure logic)
-- Use cases (mocked repositories and services)
-- Validators and business rules
+**Scope**: Domain entities, value objects, use cases (pure business logic)
+
+**Mocking Strategy**:
+- Repositories mocked with `unittest.mock` or `pytest-mock`
+- External services (email) mocked to avoid I/O
+- No database or HTTP dependencies
+
+**Example**: `tests/unit/account/domain/entities/test_account.py` (19 tests, 100% coverage)
+- Factory method validation
+- Business rule enforcement (activate once)
+- Entity identity pattern
+- Encapsulation protection (AttributeError on direct property modification)
 
 ### Integration Tests
-- API endpoints (full HTTP stack)
-- Database operations (real PostgreSQL instance)
-- Event handlers (complete flow)
+**Scope**: API endpoints, database operations, event handlers (full stack)
+
+**Real Dependencies**:
+- PostgreSQL test database (Docker service in CI)
+- Full HTTP stack (FastAPI TestClient)
+- Complete end-to-end flow validation
+
+**Example**: `tests/integration/api/test_account_endpoints.py` (future)
+- POST /accounts → 201 Created
+- Email uniqueness constraint
+- Activation flow with real database
 
 ### Test Structure
 ```
 tests/
 ├── unit/
-│   ├── domain/
-│   ├── application/
-│   └── infrastructure/
+│   └── business_context
+│       ├── domain/              # Value objects, entities
+│       ├── application/         # Use cases with mocked repos
+│       └── infrastructure/      # Mappers, validators
 └── integration/
-    ├── api/
-    └── persistence/
+    └── business_context
+        └── infrastructure/
+            ├── http/            # HTTP endpoints
+            └── repository/      # Database operations
 ```
+
+## CI/CD Pipeline
+
+### GitHub Actions
+
+Automated quality checks run on every pull request and push to `main`:
+
+**Workflow**: `.github/workflows/ci.yml` - 4 parallel jobs
+
+1. **Lint** (`black` + `ruff`)
+   - Code formatting validation (Black)
+   - PEP 8 compliance and code quality (Ruff)
+   - Import sorting and unused imports detection
+
+2. **Type Check** (`mypy`)
+   - Strict mode enabled (`strict = true`)
+   - No `Any` types allowed
+   - Full type coverage on business logic
+
+3. **Test** (`pytest` + PostgreSQL service)
+   - Unit tests (domain logic with mocks)
+   - Integration tests (database, API)
+   - Coverage report uploaded to Codecov
+   - PostgreSQL 16 test database via Docker service
+
+4. **Docker Build**
+   - Validates `development` target
+   - Validates `production` target
+   - Ensures Docker images build successfully
+
+**Status**: All jobs must pass before merging pull requests
+
+### Pre-commit Hooks (Optional)
+
+For faster feedback before pushing:
+
+```bash
+# Install pre-commit (if not using Docker)
+pip install pre-commit
+
+# Install hooks
+pre-commit install
+
+# Now black, ruff, mypy run automatically on git commit
+```
+
+**Note**: Not mandatory, CI will catch issues, but speeds up local development.
 
 ## Development Workflow
 
@@ -359,6 +462,76 @@ docker-compose run --rm api poetry run ruff check src tests
 
 # Type checking
 docker-compose run --rm api poetry run mypy src
+```
+
+### Contributing Workflow
+
+This project follows **trunk-based development** with short-lived feature branches.
+
+#### 1. Create Feature Branch
+
+```bash
+# Checkout main and pull latest
+git checkout main
+git pull origin main
+
+# Create feature branch
+git checkout -b feat/your-feature-name
+```
+
+#### 2. Development Cycle
+
+```bash
+# Make changes
+# ...
+
+# Run quality checks locally (recommended)
+docker-compose run --rm api poetry run black src tests
+docker-compose run --rm api poetry run ruff check src tests
+docker-compose run --rm api poetry run mypy src
+docker-compose run --rm api pytest
+
+# Commit with conventional commits
+git add .
+git commit -m "feat: add account activation logic"
+```
+
+#### 3. Push and Create PR
+
+```bash
+# Push feature branch
+git push origin feat/your-feature-name
+
+# Create PR on GitHub
+# CI will automatically run all quality checks
+```
+
+#### 4. Merge Strategy
+
+- **Squash and merge** into `main`
+- Delete feature branch after merge
+- `main` is always deployable
+
+### Conventional Commits
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+- `feat:` New feature
+- `fix:` Bug fix
+- `refactor:` Code refactoring (no functional change)
+- `test:` Add or update tests
+- `docs:` Documentation changes
+- `chore:` Tooling, dependencies, config
+- `ci:` CI/CD pipeline changes
+
+**Example:**
+```
+feat: add account activation with time-limited codes
+
+Implement ActivateAccount use case with:
+- 4-digit code validation
+- 60-second expiration check
+- Basic Auth verification
 ```
 
 ## License
