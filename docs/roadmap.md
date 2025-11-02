@@ -78,16 +78,18 @@ Refactor /health endpoint into proper DDD structure with shared bounded context.
 
 ## Feature: Account Creation
 
-### Domain - Account Creation Value Objects 🚧
+### Domain - Account Creation Value Objects ✅
 **Branch:** `feat/account-creation-value-objects`
 
 Email, Password, and AccountId value objects for account creation.
 
-**In Progress:**
-- ✅ Email VO with email-validator library (RFC 5322 compliance)
-- ✅ Password VO with bcrypt hashing
-- ⏳ AccountId VO with UUID v7
-- ✅ 29 unit tests with 100% coverage for Email and Password
+**Completed:**
+- ✅ Email VO with email-validator library (RFC 5322 compliance, lowercase normalization)
+- ✅ Password VO with bcrypt hashing and Self type hint
+- ✅ AccountId VO inheriting from shared UuidV7 abstract base class
+- ✅ UuidV7 abstract base class in shared domain (UUID v7 validation and factory methods)
+- ✅ 42 unit tests with 100% coverage on all value objects
+- ✅ Python 3.14 upgrade for native uuid.uuid7() support
 
 ---
 

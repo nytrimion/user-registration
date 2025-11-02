@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Self
 
 import bcrypt
 
@@ -21,7 +22,7 @@ class Password:
     hashed_value: str
 
     @classmethod
-    def from_plain_text(cls, plain_password: str) -> "Password":
+    def from_plain_text(cls, plain_password: str) -> Self:
         if not plain_password:
             raise ValueError("Password cannot be empty")
 
@@ -33,7 +34,7 @@ class Password:
         return cls(hashed_value=hashed.decode("utf-8"))
 
     @classmethod
-    def from_hash(cls, hashed_value: str) -> "Password":
+    def from_hash(cls, hashed_value: str) -> Self:
         if not hashed_value:
             raise ValueError("Hashed password cannot be empty")
 
