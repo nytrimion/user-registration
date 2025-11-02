@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.14"
 fastapi = "^0.115.5"
 uvicorn = {extras = ["standard"], version = "^0.32.1"}
 psycopg2-binary = "^2.9.10"
@@ -27,7 +27,7 @@ types-psycopg2 = "^2.9.21"
 
 [tool.black]
 line-length = 100
-target-version = ['py313']
+target-version = ['py314']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -45,7 +45,7 @@ extend-exclude = '''
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 exclude = [
     ".git",
     ".mypy_cache",
@@ -71,7 +71,7 @@ ignore = []
 "__init__.py" = ["F401"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
