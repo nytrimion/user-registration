@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for User Registration API
+# Multi-stage Dockerfile for User Registration API with Poetry
 
 # Stage 1: Base image with Python 3.13
 FROM python:3.13-slim AS base
@@ -7,27 +7,40 @@ FROM python:3.13-slim AS base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    POETRY_VERSION=1.8.4 \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
+
+# Add Poetry to PATH
+ENV PATH="$POETRY_HOME/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for PostgreSQL driver
+# Install system dependencies for PostgreSQL driver and Poetry
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libpq-dev \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    chmod +x $POETRY_HOME/bin/poetry
 
 # Stage 2: Development image
 FROM base AS development
 
-# Copy requirements files
-COPY requirements.txt requirements-dev.txt ./
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
 
-# Install Python dependencies (including dev dependencies)
-RUN pip install -r requirements.txt && \
-    pip install -r requirements-dev.txt
+# Install dependencies (including dev dependencies)
+RUN poetry install --no-root && \
+    rm -rf $POETRY_CACHE_DIR
 
 # Copy application code
 COPY . .
@@ -41,11 +54,12 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 # Stage 3: Production image
 FROM base AS production
 
-# Copy requirements file
-COPY requirements.txt ./
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
 
-# Install Python dependencies (production only)
-RUN pip install -r requirements.txt
+# Install production dependencies only
+RUN poetry install --only main --no-root && \
+    rm -rf $POETRY_CACHE_DIR
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
