@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for User Registration API with Poetry
 
-# Stage 1: Base image with Python 3.13
-FROM python:3.13-slim AS base
+# Stage 1: Base image with Python 3.14
+FROM python:3.14-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
