@@ -1,7 +1,6 @@
-from datetime import UTC, datetime
-
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+
+from src.shared.infrastructure.http.health_controller import router as health_router
 
 app = FastAPI(
     title="User Registration API",
@@ -9,16 +8,4 @@ app = FastAPI(
     version="0.1.0",
 )
 
-
-@app.get("/health")
-async def health_check() -> JSONResponse:
-    """
-    Health check endpoint for Docker and monitoring systems.
-    """
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "ok",
-            "timestamp": datetime.now(UTC).isoformat(),
-        },
-    )
+app.include_router(health_router)
