@@ -19,13 +19,13 @@ class Account:
         Direct instantiation is reserved for repository reconstruction.
 
     Invariants:
-        - account_id is immutable (entity identity)
+        - id is immutable (entity identity)
         - email must be unique across all accounts (enforced by repository)
         - password is always hashed
         - is_activated can only transition False → True via activate()
     """
 
-    _account_id: AccountId = field(repr=False)
+    _id: AccountId = field(repr=False)
     _email: Email = field(repr=False)
     _password: Password = field(repr=False)
     _is_activated: bool = field(default=False, repr=False)
@@ -53,15 +53,15 @@ class Account:
             False
         """
         return cls(
-            _account_id=AccountId.generate(),
+            _id=AccountId.generate(),
             _email=email,
             _password=password,
             _is_activated=False,
         )
 
     @property
-    def account_id(self) -> AccountId:
-        return self._account_id
+    def id(self) -> AccountId:
+        return self._id
 
     @property
     def email(self) -> Email:
@@ -92,20 +92,20 @@ class Account:
         """
         Entities are compared by ID, not by value.
 
-        Two Account instances are equal if they have the same account_id,
+        Two Account instances are equal if they have the same id,
         even if other attributes differ (entity identity pattern).
         """
         if not isinstance(other, Account):
             return NotImplemented
-        return self._account_id == other._account_id
+        return self._id == other._id
 
     def __hash__(self) -> int:
-        return hash(self._account_id)
+        return hash(self._id)
 
     def __repr__(self) -> str:
         return (
             f"Account("
-            f"account_id={self._account_id!r}, "
+            f"id={self._id!r}, "
             f"email={self._email!r}, "
             f"is_activated={self._is_activated})"
         )

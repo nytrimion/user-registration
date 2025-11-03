@@ -12,7 +12,7 @@ def test_account_create_generates_unique_id() -> None:
 
     account = Account.create(email, password)
 
-    assert isinstance(account.account_id, AccountId)
+    assert isinstance(account.id, AccountId)
 
 
 def test_account_create_sets_email_and_password() -> None:
@@ -42,7 +42,7 @@ def test_account_create_generates_different_ids_for_different_accounts() -> None
     account1 = Account.create(email1, password)
     account2 = Account.create(email2, password)
 
-    assert account1.account_id != account2.account_id
+    assert account1.id != account2.id
 
 
 def test_account_create_generates_different_ids_for_same_credentials() -> None:
@@ -52,7 +52,7 @@ def test_account_create_generates_different_ids_for_same_credentials() -> None:
     account1 = Account.create(email, password)
     account2 = Account.create(email, password)
 
-    assert account1.account_id != account2.account_id
+    assert account1.id != account2.id
     assert account1 != account2
 
 
@@ -153,7 +153,7 @@ def test_account_repr_contains_key_attributes() -> None:
     repr_string = repr(account)
 
     assert "Account" in repr_string
-    assert "account_id=" in repr_string
+    assert "id=" in repr_string
     assert "email=" in repr_string
     assert "is_activated=" in repr_string
 
@@ -164,7 +164,7 @@ def test_account_id_is_immutable() -> None:
     account = Account.create(email, password)
 
     with pytest.raises(AttributeError, match="no setter"):
-        account.account_id = AccountId.generate()  # type: ignore[misc]
+        account.id = AccountId.generate()  # type: ignore[misc]
 
 
 def test_email_cannot_be_set_directly() -> None:

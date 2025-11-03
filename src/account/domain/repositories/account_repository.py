@@ -42,7 +42,7 @@ class AccountRepository(ABC):
             - Password is already hashed by Password value object
 
         Implementation Notes:
-            - Use account.account_id as primary key
+            - Use account.id as primary key
             - Store password hash as-is (already processed)
             - Enforce database constraints (UNIQUE on email)
         """
