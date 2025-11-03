@@ -79,24 +79,7 @@ src/
 
 ### Key Design Decisions
 
-#### 1. Separate Repository for Activation Codes
-
-Two distinct repositories with clear responsibilities:
-- **`AccountRepository`**: Manages account lifecycle (creation, retrieval, activation status)
-- **`ActivationCodeRepository`**: Manages short-lived verification codes (creation, validation, deletion)
-
-**Rationale:**
-- Single Responsibility Principle compliance
-- Independent testing with dedicated mocks
-- Future evolution without coupling (e.g., code history, retry mechanisms)
-
-**Benefits:**
-- **Testability**: Mock each repository independently for faster, focused unit tests
-- **Evolvability**: Switch activation code storage (Redis, in-memory cache) without touching Account logic
-- **Performance**: Aggressive TTL/cleanup strategies for codes without impacting account data
-- **Team Collaboration**: Multiple developers can work on each repository without merge conflicts
-
-#### 2. Asynchronous Code Generation
+#### 1. Asynchronous Code Generation
 
 **Flow:**
 1. `POST /accounts` creates account (synchronous)
@@ -114,7 +97,7 @@ Two distinct repositories with clear responsibilities:
 - **User Experience**: Fast API response time (~50ms vs ~500ms with synchronous email)
 - **Observability**: Separate metrics and monitoring for account creation vs email delivery
 
-#### 3. DDD Encapsulation with @property
+#### 2. DDD Encapsulation with @property
 
 **Pattern:**
 ```python
@@ -134,7 +117,55 @@ repository.save(account)
 - **Explicitness**: Clear intent through method names (`activate()` vs property assignment)
 - **Maintainability**: Business logic changes isolated to entity methods
 
-#### 4. No ORM - Raw SQL
+#### 3. Separate Repository for Activation Codes
+
+Two distinct repositories with clear responsibilities:
+- **`AccountRepository`**: Manages account lifecycle (creation, retrieval, activation status)
+- **`ActivationCodeRepository`**: Manages short-lived verification codes (creation, validation, deletion)
+
+**Rationale:**
+- Single Responsibility Principle compliance
+- Independent testing with dedicated mocks
+- Future evolution without coupling (e.g., code history, retry mechanisms)
+
+**Benefits:**
+- **Testability**: Mock each repository independently for faster, focused unit tests
+- **Evolvability**: Switch activation code storage (Redis, in-memory cache) without touching Account logic
+- **Performance**: Aggressive TTL/cleanup strategies for codes without impacting account data
+- **Team Collaboration**: Multiple developers can work on each repository without merge conflicts
+
+#### 4. Activation Code Primary Key: account_id (YAGNI Principle)
+
+**Schema:**
+```sql
+CREATE TABLE account_activation_code (
+  account_id UUID PRIMARY KEY,  -- Composite PK: account_id only
+  code CHAR(4) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
+);
+```
+
+**Rationale:**
+- YAGNI (You Aren't Gonna Need It): No code history required in current specs
+- Primary key directly expresses business constraint: 1 active code per account
+- Simpler than synthetic UUID + UNIQUE(account_id) constraint
+- Easy migration path if historization needed later (duplicate account_id as new id column)
+
+**Benefits:**
+- **Simplicity**: No unnecessary UUID generation for temporary data
+- **Explicitness**: Schema directly encodes "one code per account" rule
+- **Performance**: Fewer indexes (no separate PK + UNIQUE constraint)
+- **Maintainability**: Easy to evolve if requirements change (15-minute migration)
+
+**Future-Proofing (if needed):**
+```sql
+-- Migration adds UUID while preserving data chronology
+ALTER TABLE account_activation_code ADD COLUMN id UUID DEFAULT account_id;
+-- UUID v7 from account preserves timestamp ordering
+```
+
+#### 5. No ORM - Raw SQL
 
 Direct SQL queries using psycopg2 without Object-Relational Mapping.
 
