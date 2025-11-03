@@ -133,6 +133,15 @@ jobs:
       - name: Install project
         run: poetry install --no-interaction
 
+      - name: Run database migrations
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_NAME: user_registration_test
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: postgres
+        run: poetry run python scripts/migrate.py
+
       - name: Run tests with coverage
         env:
           DATABASE_HOST: localhost
