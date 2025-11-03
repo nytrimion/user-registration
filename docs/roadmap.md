@@ -139,7 +139,7 @@ Use case orchestrating account registration with email uniqueness validation.
 
 ---
 
-### Infrastructure - PostgresAccountRepository Implementation 🚧
+### Infrastructure - PostgresAccountRepository Implementation ✅
 **Branch:** `feat/account-repository-implementation`
 
 PostgreSQL repository implementation with database migration and integration tests.
@@ -159,18 +159,20 @@ avoiding late discovery of migration issues and ensuring atomicity.
 - ✅ Docker layer optimization (scripts → migrations → src)
 - ✅ README documentation (Database Migrations section)
 - ✅ CI pipeline integration (migrations before tests)
-
-**Remaining:**
-- ⏳ PostgresAccountRepository implementation (create, find_by_email methods)
-- ⏳ Bidirectional mappers (Account entity ↔ DB row)
-- ⏳ AccountModule (DI bindings for account bounded context)
-- ⏳ Integration tests with real PostgreSQL (validates repository + mappers)
+- ✅ PostgresAccountRepository implementation (create, find_by_email methods with raw SQL)
+- ✅ Bidirectional mappers (Account entity ↔ DB row with type conversions)
+- ✅ 8 unit tests for mappers (100% coverage, UUID/string conversion validation)
+- ✅ 6 integration tests for repository (100% coverage, real PostgreSQL)
+- ✅ AccountModule (DI bindings for account bounded context)
+- ✅ Auto-commit strategy (pragmatic approach: repository commits automatically)
+- ✅ All quality tools passing (Black, Ruff, Mypy on src + tests)
 
 **Implementation Order:**
 1. ✅ Migration SQL + connection pool setup (3 commits)
-2. ⏳ Repository implementation with raw SQL queries
-3. ⏳ Entity-to-row mappers (preserving value objects)
-4. ⏳ Integration tests (pytest + Docker PostgreSQL service)
+2. ✅ Repository implementation with raw SQL queries (psycopg2, parameterized)
+3. ✅ Entity-to-row mappers (preserving value objects, UUID↔string conversion)
+4. ✅ Integration tests (pytest + Docker PostgreSQL service, 6 tests)
+5. ✅ Unit tests for mappers (8 tests, round-trip validation)
 
 ---
 
