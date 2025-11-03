@@ -16,6 +16,8 @@ services:
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
     depends_on:
       postgres:
         condition: service_healthy

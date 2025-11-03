@@ -122,13 +122,20 @@ Repository contract for account persistence.
 
 ---
 
-### Application - RegisterAccount Use Case ⏳
+### Application - RegisterAccount Use Case ✅
 **Branch:** `feat/register-account-use-case`
 
-Use case orchestrating account registration.
+Use case orchestrating account registration with email uniqueness validation.
 
-**Deliverables:**
-- RegisterAccount use case + unit tests with mocks
+**Completed:**
+- ✅ `RegisterAccountCommand` (immutable DTO with Email + Password VOs)
+- ✅ `RegisterAccountHandler` (CQRS handler with @inject decorator)
+- ✅ `EmailAlreadyExistsError` domain exception
+- ✅ `AccountRepository.find_by_email()` interface method
+- ✅ 8 unit tests with repository mocks (100% coverage)
+- ✅ Check-Then-Insert pattern (race condition documented)
+- ✅ Framework-agnostic handler (no FastAPI dependency)
+- ✅ Dependencies: `injector` + `fastapi-injector` added
 
 ---
 
