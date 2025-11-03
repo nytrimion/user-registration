@@ -65,7 +65,10 @@ RUN poetry install --only main --no-root && \
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
-# Copy application code
+# Copy application code with layer caching optimization
+# Order: stable → semi-stable → volatile (maximizes cache hits)
+COPY --chown=appuser:appuser scripts/ ./scripts/
+COPY --chown=appuser:appuser migrations/ ./migrations/
 COPY --chown=appuser:appuser src/ ./src/
 
 # Switch to non-root user
