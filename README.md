@@ -237,6 +237,7 @@ Direct SQL queries using psycopg2 without Object-Relational Mapping.
 - **Dependency Injection**: `injector` + `fastapi-injector` (framework-agnostic DI)
 - **Database**: PostgreSQL 16
 - **Database Driver**: psycopg2 (raw SQL, no ORM)
+- **Database Migrations**: Yoyo-migrations (raw SQL migrations with rollback support)
 - **Testing**: pytest, pytest-asyncio, pytest-cov, httpx
 - **Code Quality**: black, ruff, mypy
 - **Containerization**: Docker, Docker Compose
@@ -391,6 +392,61 @@ docker-compose logs -f api
 ```
 
 The API will be available at `http://localhost:8000`.
+
+### Database Migrations
+
+The project uses **Yoyo-migrations** for database schema management with raw SQL migrations.
+
+#### Migration Management
+
+```bash
+# Apply all pending migrations
+docker-compose exec api python scripts/migrate.py
+
+# Rollback last migration
+docker-compose exec api python scripts/migrate.py --rollback
+
+# List migration status
+docker-compose exec api python scripts/migrate.py --list
+```
+
+#### Migration File Structure
+
+Migrations follow a timestamp-based naming convention:
+
+```
+migrations/
+├── 20251103_160000_create_account_table.sql          # Forward migration
+└── 20251103_160000_create_account_table.rollback.sql # Rollback migration
+```
+
+**Key Points:**
+- **Timestamp format**: `YYYYMMDD_HHMMSS_description.sql`
+- **Separate rollback files**: `*.rollback.sql` for safe reversibility
+- **Raw SQL**: No ORM magic, explicit schema definitions
+- **Environment-aware**: Uses same DATABASE_* env vars as docker-compose.yml
+- **CI/CD ready**: `scripts/migrate.py` wrapper for automated deployments
+
+#### Creating New Migrations
+
+```bash
+# Manual creation with timestamp
+touch migrations/$(date +%Y%m%d_%H%M%S)_add_user_roles.sql
+touch migrations/$(date +%Y%m%d_%H%M%S)_add_user_roles.rollback.sql
+
+# Edit the forward migration (*.sql)
+# Add your CREATE TABLE / ALTER TABLE statements
+
+# Edit the rollback migration (*.rollback.sql)
+# Add corresponding DROP TABLE / ALTER TABLE statements
+```
+
+**Migration Best Practices:**
+- ✅ Always test migrations on development database first
+- ✅ Include both forward and rollback scripts
+- ✅ Add comments explaining business rationale for schema changes
+- ✅ Use IF NOT EXISTS / IF EXISTS for idempotency
+- ⚠️ Avoid breaking changes in production (add columns as nullable first)
 
 ### Running Tests
 
