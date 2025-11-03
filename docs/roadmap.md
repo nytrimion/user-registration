@@ -139,23 +139,29 @@ Use case orchestrating account registration with email uniqueness validation.
 
 ---
 
-### Infrastructure - Database Migration (Account) ⏳
-**Branch:** `feat/account-table-migration`
+### Infrastructure - PostgresAccountRepository Implementation 🚧
+**Branch:** `feat/account-repository-implementation`
 
-SQL schema for account table.
+PostgreSQL repository implementation with database migration and integration tests.
 
-**Deliverables:**
-- Migration script, connection pool, account table
-
----
-
-### Infrastructure - AccountRepository ⏳
-**Branch:** `feat/account-repository`
-
-Repository implementation with raw SQL.
+**Rationale:**
+Merged "Database Migration" and "AccountRepository" PRs into single vertical
+slice. This allows immediate validation of SQL schema through repository tests,
+avoiding late discovery of migration issues and ensuring atomicity.
 
 **Deliverables:**
-- AccountRepository + mappers + integration tests
+- SQL migration script (CREATE TABLE account with constraints)
+- Database connection pool configuration (psycopg2)
+- PostgresAccountRepository implementation (create, find_by_email methods)
+- Bidirectional mappers (Account entity ↔ DB row)
+- Integration tests with real PostgreSQL (validates migration + repository)
+- Transaction management for data consistency
+
+**Implementation Order:**
+1. Migration SQL + connection pool setup
+2. Repository implementation with raw SQL queries
+3. Entity-to-row mappers (preserving value objects)
+4. Integration tests (pytest + Docker PostgreSQL service)
 
 ---
 
