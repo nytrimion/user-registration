@@ -61,11 +61,11 @@ src/
 │   │   ├── contracts/               # External Service Interfaces
 │   │   │   └── services/
 │   │   │       └── email_service.py
-│   │   ├── use_cases/
+│   │   ├── commands/                # CQRS Commands + Handlers
 │   │   │   ├── register_account.py
 │   │   │   └── activate_account.py
-│   │   └── dto/
-│   │       └── account_dto.py
+│   │   └── events/                  # Domain Event Handlers
+│   │       └── account_created_handler.py
 │   └── infrastructure/              # Infrastructure Layer (Technical Details)
 │       ├── persistence/
 │       │   ├── postgres_account_repository.py
@@ -165,7 +165,50 @@ ALTER TABLE account_activation_code ADD COLUMN id UUID DEFAULT account_id;
 -- UUID v7 from account preserves timestamp ordering
 ```
 
-#### 5. No ORM - Raw SQL
+#### 5. Framework-Agnostic Dependency Injection
+
+**Technology:** `injector` + `fastapi-injector` instead of FastAPI's native `Depends()`
+
+**Flow:**
+```python
+# Handler is framework-agnostic (no FastAPI imports)
+class RegisterAccountHandler:
+    @inject
+    def __init__(self, repository: AccountRepository):
+        self._repository = repository
+
+# FastAPI controller uses @inject decorator
+@router.post("/accounts")
+@inject
+async def register(handler: RegisterAccountHandler):
+    handler.handle(command)
+
+# Event handler works outside HTTP context
+class AccountCreatedHandler:
+    @inject
+    def __init__(self, code_repo: ActivationCodeRepository, email: EmailService):
+        ...
+```
+
+**Rationale:**
+- FastAPI's `Depends()` is **HTTP-request scoped only** - cannot inject dependencies in event handlers, CLI scripts, or background jobs
+- Event-driven architecture requires DI outside the HTTP cycle (`AccountCreatedHandler` runs asynchronously)
+- Clean Architecture compliance: Application layer must remain framework-agnostic
+
+**Benefits:**
+- **Event Handlers**: Inject repositories/services in async background tasks (impossible with `Depends()`)
+- **Testability**: Unit test handlers with mocks without `TestClient` or `app.dependency_overrides`
+- **Extensibility**: Same DI works in CLI commands, scheduled jobs, other frameworks
+- **Clean Architecture**: Application handlers don't depend on FastAPI lifecycle
+
+**Implementation:**
+- `ApplicationModule` centralizes all bindings (interfaces → implementations)
+- `@inject` decorator on handler constructors for auto-wiring
+- Singleton repositories (connection pooling), transient handlers (stateless)
+
+**Documentation:** See [`docs/dependency_injection.md`](docs/dependency_injection.md) for complete strategy and examples.
+
+#### 6. No ORM - Raw SQL
 
 Direct SQL queries using psycopg2 without Object-Relational Mapping.
 
@@ -190,7 +233,8 @@ Direct SQL queries using psycopg2 without Object-Relational Mapping.
 ### Core Technologies
 - **Python**: 3.14
 - **Dependency Management**: Poetry 1.8.4
-- **Web Framework**: FastAPI (routing, dependency injection)
+- **Web Framework**: FastAPI (routing only)
+- **Dependency Injection**: `injector` + `fastapi-injector` (framework-agnostic DI)
 - **Database**: PostgreSQL 16
 - **Database Driver**: psycopg2 (raw SQL, no ORM)
 - **Testing**: pytest, pytest-asyncio, pytest-cov, httpx

@@ -30,35 +30,14 @@ The API must support the following use cases:
 - **Framework**: FastAPI
 - **DBMS**: PostgreSQL
 
-## Anti-patterns to Systematically Avoid
+### Documentation References
 
-### Naming Conventions
+Consider these documents as fundamental references :
 
-**Banned generic names:**
-
-- `data`, `item`, `value`, `temp`, `result`, `obj`, `info`, `stuff`
-
-**Required naming conventions:**
-
-- Use complete names describing business intention
-- Boolean: `isValid`, `hasPermission`, `canExecute`
-- Counters: `userCount`, `messageTotal`, `maxRetries`
-- Actions: `createUser`, `validateInput`, `sendMessage`
-- Collections: `activeUsers`, `chatMessages`, `validationRules`
-
-### Structural Anti-patterns
-
-- **Monolithic methods** - break down into smaller, focused methods
-- **God components** - decompose into specialized components
-- **Mixed concerns** - separate business logic, validation, and presentation
-- **Deep nesting** - use early returns and guard clauses
-
-### Verbosity Issues
-
-- **Single-use variables** - prohibited unless they improve business clarity
-- **Obvious explanatory variables** - eliminate redundant intermediates
-- **Defensive over-commenting** - trust well-named code to be self-documenting
-- **Unnecessary abstractions** - don't over-engineer simple solutions
+- **README**: README.md
+- **Project requirements**: docs/requirements.md
+- **Project roadmap**: docs/roadmap.md
+- **Dependency injection**: docs/dependency_injection.md
 
 ## Code Quality Standards
 
@@ -79,8 +58,9 @@ The API must support the following use cases:
 - **RESTful APIs**: Consistent HTTP methods, status codes, and response formats
 - **Middleware Pattern**: Reusable middleware for authentication, validation, logging
 - **Service Layer**: Business logic separated from route handlers
-- **Database Layer**: Repository pattern with Prisma
-- **Input Validation**: Zod schemas for all API inputs
+- **Database Layer**: Repository pattern (no ORM - raw SQL with psycopg2)
+- **Input Validation**: Pydantic models for all API inputs
+- **Dependency Injection**: `injector` + `fastapi-injector` for framework-agnostic DI (handlers, repositories, services injectable in HTTP routes, event handlers, CLI, tests)
 
 ## Development Workflow
 
@@ -153,6 +133,36 @@ When receiving code feedback:
 - **Query Optimization**: Efficient queries with proper indexing
 - **Data Validation**: Both database-level and application-level validation
 
+## Anti-patterns to Systematically Avoid
+
+### Naming Conventions
+
+**Banned generic names:**
+
+- `data`, `item`, `value`, `temp`, `result`, `obj`, `info`, `stuff`
+
+**Required naming conventions:**
+
+- Use complete names describing business intention
+- Boolean: `isValid`, `hasPermission`, `canExecute`
+- Counters: `userCount`, `messageTotal`, `maxRetries`
+- Actions: `createUser`, `validateInput`, `sendMessage`
+- Collections: `activeUsers`, `chatMessages`, `validationRules`
+
+### Structural Anti-patterns
+
+- **Monolithic methods** - break down into smaller, focused methods
+- **God components** - decompose into specialized components
+- **Mixed concerns** - separate business logic, validation, and presentation
+- **Deep nesting** - use early returns and guard clauses
+
+### Verbosity Issues
+
+- **Single-use variables** - prohibited unless they improve business clarity
+- **Obvious explanatory variables** - eliminate redundant intermediates
+- **Defensive over-commenting** - trust well-named code to be self-documenting
+- **Unnecessary abstractions** - don't over-engineer simple solutions
+
 ## DDD Implementation Rules
 
 ### Bounded Context Structure
@@ -167,6 +177,28 @@ When receiving code feedback:
 - **Constructor injection**: Dependencies via interfaces only
 - **Aggregates**: Consistency boundaries with business rules
 - **Value Objects**: Immutable domain primitives
+
+### CQRS Structure (Simplified)
+
+For projects < 10 use cases, use **pragmatic CQRS**:
+
+- **Commands**: Merge Command (DTO) + Handler in **same file** (`application/commands/register_account.py`)
+- **Events**: Keep event handlers **separate** (`application/events/account_created_handler.py`) - different dependencies + execution context (async)
+- **Rationale**: Reduces boilerplate, improves cohesion, maintains testability
+
+**Example**:
+```python
+# application/commands/register_account.py
+@dataclass(frozen=True)
+class RegisterAccountCommand:
+    email: Email
+    password: Password
+
+class RegisterAccountHandler:
+    @inject
+    def __init__(self, repository: AccountRepository):
+        self._repository = repository
+```
 
 ### Development Priorities
 
