@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.account.domain.entities.account import Account
+from src.account.domain.value_objects.email import Email
 
 
 class AccountRepository(ABC):
@@ -45,5 +46,30 @@ class AccountRepository(ABC):
             - Use account.id as primary key
             - Store password hash as-is (already processed)
             - Enforce database constraints (UNIQUE on email)
+        """
+        pass
+
+    @abstractmethod
+    def find_by_email(self, email: Email) -> Account | None:
+        """
+        Find an account by its email address.
+
+        Searches for an existing account with the given email.
+        Returns None if no account is found.
+
+        Args:
+            email: The Email value object to search for
+
+        Returns:
+            Account if found, None otherwise
+
+        Business Rules:
+            - Email comparison must be case-insensitive (normalized by Email VO)
+            - Returns complete Account aggregate with all properties
+
+        Implementation Notes:
+            - Use exact match on normalized email (Email VO handles normalization)
+            - Reconstruct Account entity with all value objects
+            - Return None (not exception) if not found
         """
         pass
