@@ -149,19 +149,28 @@ Merged "Database Migration" and "AccountRepository" PRs into single vertical
 slice. This allows immediate validation of SQL schema through repository tests,
 avoiding late discovery of migration issues and ensuring atomicity.
 
-**Deliverables:**
-- SQL migration script (CREATE TABLE account with constraints)
-- Database connection pool configuration (psycopg2)
-- PostgresAccountRepository implementation (create, find_by_email methods)
-- Bidirectional mappers (Account entity ↔ DB row)
-- Integration tests with real PostgreSQL (validates migration + repository)
-- Transaction management for data consistency
+**Completed:**
+- ✅ SQL migration script (account table: UUID v7, UNIQUE email, audit columns)
+- ✅ Yoyo-migrations setup (Python wrapper, rollback support, CI integration)
+- ✅ Database connection pool (PostgresConnectionFactory with ThreadedConnectionPool)
+- ✅ DatabaseConnectionFactory interface (injectable, testable)
+- ✅ InfrastructureModule (DI bindings for shared infrastructure)
+- ✅ 6 integration tests for connection pool (96% coverage)
+- ✅ Docker layer optimization (scripts → migrations → src)
+- ✅ README documentation (Database Migrations section)
+- ✅ CI pipeline integration (migrations before tests)
+
+**Remaining:**
+- ⏳ PostgresAccountRepository implementation (create, find_by_email methods)
+- ⏳ Bidirectional mappers (Account entity ↔ DB row)
+- ⏳ AccountModule (DI bindings for account bounded context)
+- ⏳ Integration tests with real PostgreSQL (validates repository + mappers)
 
 **Implementation Order:**
-1. Migration SQL + connection pool setup
-2. Repository implementation with raw SQL queries
-3. Entity-to-row mappers (preserving value objects)
-4. Integration tests (pytest + Docker PostgreSQL service)
+1. ✅ Migration SQL + connection pool setup (3 commits)
+2. ⏳ Repository implementation with raw SQL queries
+3. ⏳ Entity-to-row mappers (preserving value objects)
+4. ⏳ Integration tests (pytest + Docker PostgreSQL service)
 
 ---
 
