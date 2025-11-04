@@ -79,13 +79,23 @@ class Account:
         """
         Activate the account after email verification.
 
-        Business rule: Account can only be activated once.
+        This operation is idempotent: calling it on an already-active
+        account has no effect and does not raise an error.
 
-        Raises:
-            ValueError: If account is already activated
+        Business rule: Account transitions from inactive → active.
+        Subsequent calls are no-ops (idempotent for resilience).
+
+        Example:
+            >>> account = Account.create(email, password)
+            >>> account.is_activated
+            False
+            >>> account.activate()
+            >>> account.is_activated
+            True
+            >>> account.activate()  # No error, idempotent
+            >>> account.is_activated
+            True
         """
-        if self._is_activated:
-            raise ValueError("Account is already activated")
         self._is_activated = True
 
     def __eq__(self, other: object) -> bool:

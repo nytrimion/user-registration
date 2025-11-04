@@ -45,6 +45,7 @@ from injector import inject
 
 from src.account.domain.entities.account import Account
 from src.account.domain.repositories.account_repository import AccountRepository
+from src.account.domain.value_objects.account_id import AccountId
 from src.account.domain.value_objects.email import Email
 from src.account.infrastructure.persistence.account_mapper import (
     to_domain,
@@ -187,6 +188,67 @@ class PostgresAccountRepository(AccountRepository):
                     WHERE email = %s
                     """,
                     (email.value,),
+                )
+                row_tuple = cursor.fetchone()
+
+                if row_tuple is None:
+                    return None
+
+                # Convert tuple to dictionary for mapper
+                # psycopg2 returns tuples by default, not dicts
+                column_names = [
+                    "id",
+                    "email",
+                    "password_hash",
+                    "is_activated",
+                    "created_at",
+                    "updated_at",
+                ]
+                row_dict = dict(zip(column_names, row_tuple, strict=False))
+
+                return to_domain(row_dict)
+
+    def find_by_id(self, account_id: AccountId) -> Account | None:
+        """
+        Find account by unique identifier.
+
+        Searches for an account with the given AccountId (primary key).
+        Returns None if no account is found.
+
+        Args:
+            account_id: AccountId value object (UUID v7)
+
+        Returns:
+            Account entity if found, None otherwise
+
+        SQL:
+            SELECT id, email, password_hash, is_activated, created_at, updated_at
+            FROM account
+            WHERE id = %s
+
+        Note:
+            - AccountId is primary key (guaranteed unique)
+            - Returns complete Account entity with all value objects
+            - Does NOT raise exception if not found (returns None)
+            - Used in account activation workflow
+
+        Example:
+            >>> account_id = AccountId(UUID("019..."))
+            >>> account = repository.find_by_id(account_id)
+            >>> if account is None:
+            ...     raise AccountNotFoundError("Account not found")
+            >>> account.activate()
+            >>> repository.save(account)
+        """
+        with self._db.connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, email, password_hash, is_activated, created_at, updated_at
+                    FROM account
+                    WHERE id = %s
+                    """,
+                    (str(account_id.value),),
                 )
                 row_tuple = cursor.fetchone()
 

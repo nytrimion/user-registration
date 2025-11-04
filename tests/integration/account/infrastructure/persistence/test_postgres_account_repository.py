@@ -27,6 +27,7 @@ import pytest
 from psycopg2 import IntegrityError
 
 from src.account.domain.entities.account import Account
+from src.account.domain.value_objects.account_id import AccountId
 from src.account.domain.value_objects.email import Email
 from src.account.domain.value_objects.password import Password
 from src.account.infrastructure.persistence.postgres_account_repository import (
@@ -228,3 +229,52 @@ def test_find_by_email_is_case_insensitive(
     # Assert
     assert found_account is not None
     assert found_account.email.value == unique_email_upper.lower()  # Stored as lowercase
+
+
+def test_find_by_id_returns_account_when_found(
+    repository: PostgresAccountRepository,
+    test_email: Email,
+    test_password: Password,
+) -> None:
+    """
+    PostgresAccountRepository.find_by_id() should return account when found.
+
+    Validates:
+        - Account is retrievable by ID after creation
+        - AccountId search works correctly
+        - Complete Account entity is returned
+        - Used in activation workflow
+    """
+    # Arrange
+    account = Account.create(test_email, test_password)
+    repository.save(account)  # Commits automatically
+
+    # Act
+    found_account = repository.find_by_id(account.id)
+
+    # Assert
+    assert found_account is not None
+    assert found_account.id == account.id
+    assert found_account.email == test_email
+    assert found_account.is_activated is False
+
+
+def test_find_by_id_returns_none_when_not_found(
+    repository: PostgresAccountRepository,
+) -> None:
+    """
+    PostgresAccountRepository.find_by_id() should return None when not found.
+
+    Validates:
+        - Returns None (not exception) for non-existent AccountId
+        - Handles "not found" gracefully
+        - Used to validate account exists before activation
+    """
+    # Arrange
+    non_existent_id = AccountId.generate()
+
+    # Act
+    found_account = repository.find_by_id(non_existent_id)
+
+    # Assert
+    assert found_account is None

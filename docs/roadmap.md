@@ -336,13 +336,34 @@ Event handler that reacts to AccountCreated event by generating activation code 
 
 ---
 
-### Application - ActivateAccount Use Case ⏳
+### Application - ActivateAccount Use Case ✅
 **Branch:** `feat/activate-account-use-case`
 
 Use case for account activation with code verification.
 
-**Deliverables:**
-- ActivateAccount use case + unit tests with mocks
+**Completed:**
+- ✅ Domain exceptions (AccountNotFoundError, ActivationCodeNotFoundError, ActivationCodeExpiredError, InvalidActivationCodeError)
+- ✅ Exceptions refactored to single file (exceptions.py instead of exceptions/__init__.py)
+- ✅ `ActivateAccountCommand` (immutable DTO with AccountId + ActivationCode VO)
+- ✅ `ActivateAccountHandler` (CQRS handler with @inject decorator)
+- ✅ `AccountRepository.find_by_id()` interface method + PostgreSQL implementation
+- ✅ 10 unit tests for ActivateAccountHandler (100% coverage)
+- ✅ 2 integration tests for AccountRepository.find_by_id()
+- ✅ Account.activate() made idempotent (no error on repeated calls)
+- ✅ All quality tools passing (Black, Ruff, Mypy, Pytest)
+
+**Architecture:**
+- Command + Handler in same file (pragmatic CQRS for <10 use cases)
+- ActivationCode as Value Object (not raw string) for type safety
+- Validation order: Account exists → Code exists → Code not expired → Code matches
+- Idempotent operation: activate() can be called multiple times safely
+- Repository returns None (not exception) for "not found"
+
+**Business Rules Validated:**
+- Account must exist before activation
+- Activation code must exist and not be expired (60s)
+- Code value must match exactly (ActivationCode VO comparison)
+- Account transitions inactive → active (idempotent for resilience)
 
 ---
 
