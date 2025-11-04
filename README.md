@@ -614,7 +614,7 @@ docker-compose run --rm api poetry run black src tests
 docker-compose run --rm api poetry run ruff check src tests
 
 # Type checking
-docker-compose run --rm api poetry run mypy src
+docker-compose run --rm api poetry run mypy src tests
 ```
 
 ### Contributing Workflow

@@ -92,24 +92,3 @@ class AccountActivationRepository(ABC):
                 print("Activation is still valid")
         """
         pass
-
-    @abstractmethod
-    def delete(self, account_id: AccountId) -> None:
-        """
-        Delete account activation by account ID (idempotent).
-
-        Args:
-            account_id: AccountId of activation to delete
-
-        Implementation Notes:
-            - Idempotent operation (no error if activation doesn't exist)
-            - Used after successful activation to prevent code reuse
-            - Database: DELETE FROM account_activation WHERE account_id = ?
-
-        Example:
-            # After successful validation
-            if activation.is_valid(user_input):
-                account.activate()
-                repository.delete(account_id)  # Remove used code
-        """
-        pass

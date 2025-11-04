@@ -252,7 +252,7 @@ validated together) and facilitates review of complete business rules.
 
 ---
 
-### Infrastructure - PostgresAccountActivationRepository Implementation ⏳
+### Infrastructure - PostgresAccountActivationRepository Implementation ✅
 **Branch:** `feat/account-activation-repository-implementation`
 
 PostgreSQL repository implementation with database migration and integration tests.
@@ -263,20 +263,21 @@ slice. This allows immediate validation of SQL schema through repository tests,
 avoiding late discovery of migration issues and ensuring atomicity. Same pattern
 as PostgresAccountRepository (line 142-150).
 
-**Deliverables:**
-- SQL migration script (account_activation_code table: account_id PK, code, expires_at, audit columns)
-- PostgresAccountActivationRepository implementation (save, find_by_account_id, delete methods with raw SQL)
-- Bidirectional mappers (AccountActivation entity ↔ DB row with type conversions)
-- Unit tests for mappers (100% coverage, AccountId/string conversion validation)
-- Integration tests for repository (100% coverage, real PostgreSQL)
-- All quality tools passing (Black, Ruff, Mypy on src + tests)
+**Completed:**
+- ✅ SQL migration script (account_activation table: account_id PK, code, created_at, expires_at)
+- ✅ PostgresAccountActivationRepository implementation (save, find_by_account_id with raw SQL)
+- ✅ Bidirectional mappers (AccountActivation entity ↔ DB row with type conversions)
+- ✅ Unit tests for mappers (12 tests, 100% coverage, AccountId/string conversion validation)
+- ✅ Integration tests for repository (7 tests, 100% coverage, real PostgreSQL)
+- ✅ Dependency injection configuration (AccountModule binding)
+- ✅ All quality tools passing (Black, Ruff, Mypy on src + tests)
 
-**Implementation Order:**
-1. Migration SQL + connection pool reuse (existing infrastructure)
-2. Repository implementation with raw SQL queries (psycopg2, parameterized)
-3. Entity-to-row mappers (preserving value objects, expiration timestamp handling)
-4. Integration tests (pytest + Docker PostgreSQL service)
-5. Unit tests for mappers (round-trip validation)
+**Implementation Details:**
+- Database: account_activation table with PK on account_id, FK to account.id (CASCADE)
+- UPSERT: INSERT ... ON CONFLICT (account_id) DO UPDATE (one code per account)
+- Mapper: to_persistence/to_domain with UUID/datetime handling
+- Tests: 19 tests total (12 unit + 7 integration), 100% coverage
+- Removed: delete() method from repository interface (premature for MVP)
 
 ---
 
