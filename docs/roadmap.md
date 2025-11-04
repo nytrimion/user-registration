@@ -367,13 +367,48 @@ Use case for account activation with code verification.
 
 ---
 
-### Infrastructure - POST /accounts/activate Endpoint ⏳
+### Infrastructure - POST /accounts/{id}/activate Endpoint ✅
 **Branch:** `feat/post-accounts-activate-endpoint`
 
-API endpoint for account activation.
+API endpoint for account activation with Basic Auth security.
 
-**Deliverables:**
-- POST /accounts/activate controller + Basic Auth + integration tests
+**Completed:**
+- ✅ POST /accounts/{id}/activate HTTP endpoint
+- ✅ ActivateAccountRequest DTO with Pydantic validation (4-digit code)
+- ✅ Basic Auth security with configurable credentials (API_USERNAME/API_PASSWORD env vars)
+- ✅ validate_api_credentials() utility in shared infrastructure (reusable, timing-attack resistant)
+- ✅ Domain exception → HTTP status code mapping (200/400/401/404/422)
+- ✅ 6 integration tests (happy path, idempotence, Basic Auth, validation)
+- ✅ Test fixtures (account_repository, account_activation_repository) for repository access
+- ✅ README documentation with curl examples and default credentials
+- ✅ All quality tools passing (Black, Ruff, Mypy, Pytest)
+
+**HTTP Layer:**
+- Controller: account_controller.py (activate_account endpoint)
+- DTO: ActivateAccountRequest (code: 4-digit numeric string)
+- Security: HTTPBasic with secrets.compare_digest() for constant-time comparison
+- Error handling: Comprehensive exception mapping with WWW-Authenticate header
+
+**Tests:**
+- Integration tests refactored with PyTest classes (TestCreateAccountEndpoint, TestActivateAccountEndpoint)
+- URL helpers (create_account_url(), activate_account_url())
+- Repository fixtures for end-to-end testing with real database
+- Test strategy: Focus on HTTP-specific concerns (Basic Auth, DTO validation, status codes)
+
+**Business Rules Validated:**
+- Basic Auth required to prevent unauthorized activation attempts
+- Account must exist (404 if not found)
+- Activation code must exist and not be expired (60 seconds)
+- Code value must match (ActivationCode VO comparison)
+- Operation is idempotent (activating already-active account succeeds with 200)
+- Request body (not URL) for code to avoid logging in browser history
+
+**Architecture Decisions:**
+- Code sent in request body JSON (not query parameter) for security
+- Basic Auth credentials configurable via environment variables (default: api/secret)
+- Shared auth utility in src/shared/infrastructure/http/auth.py for reusability
+- Test fixtures in conftest.py for clean test architecture
+- Removed redundant integration tests (domain logic already covered by unit tests)
 
 ---
 
