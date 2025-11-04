@@ -19,33 +19,41 @@ class AccountRepository(ABC):
         - Repository per aggregate root (Account is the aggregate root)
         - Returns domain entities, not DTOs or database records
         - Accepts value objects as parameters (not primitive types)
-        - Explicit methods for distinct operations (create, update, delete)
+        - save() method handles both insert and update (UPSERT pattern)
     """
 
     @abstractmethod
-    def create(self, account: Account) -> None:
+    def save(self, account: Account) -> None:
         """
-        Persist a new account in the data store.
+        Persist account in the data store (insert or update).
 
-        Creates a new account record. The account must not already exist
-        (uniqueness constraints must be enforced by the implementation).
+        Uses UPSERT pattern: inserts if account.id doesn't exist, updates otherwise.
+        Email uniqueness constraint is preserved (will raise error if email conflict).
 
         Args:
             account: The Account aggregate to persist
 
         Raises:
-            Exception: If account with same email already exists
-            Exception: If account with same account_id already exists
+            Exception: If email already exists for a different account ID
 
         Business Rules:
-            - Email uniqueness must be enforced
-            - Account ID uniqueness must be enforced
+            - Email uniqueness must be enforced across all accounts
+            - UPSERT on account.id (primary key)
             - Password is already hashed by Password value object
 
         Implementation Notes:
+            - PostgreSQL: INSERT ... ON CONFLICT (id) DO UPDATE
             - Use account.id as primary key
             - Store password hash as-is (already processed)
             - Enforce database constraints (UNIQUE on email)
+            - UPDATE replaces all columns if id exists
+
+        Example:
+            account = Account.create(email, password)
+            repository.save(account)  # INSERT
+
+            account.activate()
+            repository.save(account)  # UPDATE (same id, is_active = True)
         """
         pass
 

@@ -131,7 +131,7 @@ class RegisterAccountHandler:
 
         account = Account.create(email=command.email, password=command.password)
 
-        self._repository.create(account)
+        self._repository.save(account)
 
         # Emit AccountCreated domain event
         # Event handler will generate activation code and send email

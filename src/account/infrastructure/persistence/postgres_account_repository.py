@@ -71,7 +71,7 @@ class PostgresAccountRepository(AccountRepository):
         - Simplifies application layer (no explicit transaction management)
 
     SQL Queries:
-        - INSERT: Creates new account with UUID v7, email, password hash
+        - UPSERT: Creates or updates account with UUID v7, email, password hash
         - SELECT: Retrieves account by email (case-insensitive via Email VO)
         - Constraints: UNIQUE on email enforced by database
 
@@ -91,32 +91,33 @@ class PostgresAccountRepository(AccountRepository):
         """
         self._db = db
 
-    def create(self, account: Account) -> None:
+    def save(self, account: Account) -> None:
         """
-        Persist a new account in the database.
+        Persist account in the database (insert or update).
 
-        Inserts account into the account table and commits the transaction
-        automatically. Each create() call is an independent transaction.
+        Uses UPSERT pattern: inserts if account.id doesn't exist, updates otherwise.
+        Email uniqueness constraint is preserved (will raise error if email conflict).
 
         Args:
             account: Account entity to persist
 
         Raises:
-            psycopg2.IntegrityError: If email or ID already exists (UNIQUE violation)
+            psycopg2.IntegrityError: If email already exists for a different account ID
             psycopg2.DatabaseError: If database operation fails
 
-        SQL:
-            INSERT INTO account (id, email, password_hash, is_activated, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, NOW(), NOW())
-
         Transaction:
-            - Commits automatically after successful INSERT
+            - Commits automatically after successful UPSERT
             - Each repository call is an independent transaction
+            - UPSERT is atomic (no race condition between INSERT and UPDATE)
             - For complex workflows requiring multiple operations in one transaction,
               consider implementing Unit of Work pattern
 
         Example:
-            >>> repository.create(account)  # Automatically committed
+            >>> account = Account.create(email, password)
+            >>> repository.save(account)  # INSERT (new id)
+            >>>
+            >>> account.activate()
+            >>> repository.save(account)  # UPDATE (same id, is_activated = True)
         """
         with self._db.connection() as conn:
             with conn.cursor() as cursor:
@@ -127,6 +128,11 @@ class PostgresAccountRepository(AccountRepository):
                         id, email, password_hash, is_activated, created_at, updated_at
                     )
                     VALUES (%s, %s, %s, %s, NOW(), NOW())
+                    ON CONFLICT (id) DO UPDATE SET
+                        email = EXCLUDED.email,
+                        password_hash = EXCLUDED.password_hash,
+                        is_activated = EXCLUDED.is_activated,
+                        updated_at = NOW()
                     """,
                     (
                         row["id"],
@@ -135,7 +141,7 @@ class PostgresAccountRepository(AccountRepository):
                         row["is_activated"],
                     ),
                 )
-                # Commit transaction immediately after successful INSERT
+                # Commit transaction immediately after successful UPSERT
                 # Note: For production systems with complex workflows requiring
                 # multiple operations in one transaction (e.g., create account +
                 # emit event + save activation code), consider implementing

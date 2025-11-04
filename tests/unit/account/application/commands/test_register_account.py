@@ -61,7 +61,7 @@ def test_register_account_success_when_email_available() -> None:
 
     Verification:
         - repository.find_by_email() called with correct email
-        - repository.create() called exactly once
+        - repository.save() called exactly once
         - Account created with correct email and password
     """
     # Arrange: Create command with valid credentials
@@ -84,10 +84,10 @@ def test_register_account_success_when_email_available() -> None:
 
     # Assert: Verify business logic execution
     mock_repository.find_by_email.assert_called_once_with(email)
-    mock_repository.create.assert_called_once()
+    mock_repository.save.assert_called_once()
 
     # Verify Account was created with correct properties
-    created_account = mock_repository.create.call_args[0][0]
+    created_account = mock_repository.save.call_args[0][0]
     assert isinstance(created_account, Account)
     assert created_account.email == email
     assert created_account.password == password
@@ -102,7 +102,7 @@ def test_register_account_raises_error_when_email_already_exists() -> None:
 
     Verification:
         - EmailAlreadyExistsError raised with correct email
-        - repository.create() NOT called (early return on validation failure)
+        - repository.save() NOT called (early return on validation failure)
     """
     # Arrange: Create command with email that already exists
     email = Email("existing@example.com")
@@ -127,8 +127,8 @@ def test_register_account_raises_error_when_email_already_exists() -> None:
     assert exc_info.value.email == email
     assert "existing@example.com" in str(exc_info.value)
 
-    # Verify create() was NOT called (validation failed early)
-    mock_repository.create.assert_not_called()
+    # Verify save() was NOT called (validation failed early)
+    mock_repository.save.assert_not_called()
 
 
 def test_register_account_propagates_invalid_email_error() -> None:
@@ -252,7 +252,7 @@ def test_register_account_with_hashed_password() -> None:
     handler.handle(command)
 
     # Assert: Password was hashed (not plain text)
-    created_account = mock_repository.create.call_args[0][0]
+    created_account = mock_repository.save.call_args[0][0]
     assert created_account.password.hashed_value != plain_password
 
 
@@ -281,7 +281,7 @@ def test_register_account_creates_different_ids_for_same_email_retry() -> None:
     handler.handle(command2)
 
     # Assert: Different Account IDs were generated
-    account1 = mock_repository.create.call_args_list[0][0][0]
-    account2 = mock_repository.create.call_args_list[1][0][0]
+    account1 = mock_repository.save.call_args_list[0][0][0]
+    account2 = mock_repository.save.call_args_list[1][0][0]
 
     assert account1.id != account2.id
