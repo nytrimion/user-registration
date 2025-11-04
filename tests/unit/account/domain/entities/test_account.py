@@ -66,14 +66,19 @@ def test_account_activate_changes_status_to_true() -> None:
     assert account.is_activated is True
 
 
-def test_account_activate_raises_if_already_activated() -> None:
+def test_account_activate_is_idempotent() -> None:
+    """activate() should be idempotent (no error when called multiple times)."""
     email = Email("user@example.com")
     password = Password.from_plain_text("SecurePassword123")
     account = Account.create(email, password)
-    account.activate()
 
-    with pytest.raises(ValueError, match="Account is already activated"):
-        account.activate()
+    # First activation
+    account.activate()
+    assert account.is_activated is True
+
+    # Second activation (idempotent - no error)
+    account.activate()
+    assert account.is_activated is True
 
 
 def test_account_equality_by_id() -> None:

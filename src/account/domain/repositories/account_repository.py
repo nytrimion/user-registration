@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.account.domain.entities.account import Account
+from src.account.domain.value_objects.account_id import AccountId
 from src.account.domain.value_objects.email import Email
 
 
@@ -79,5 +80,38 @@ class AccountRepository(ABC):
             - Use exact match on normalized email (Email VO handles normalization)
             - Reconstruct Account entity with all value objects
             - Return None (not exception) if not found
+        """
+        pass
+
+    @abstractmethod
+    def find_by_id(self, account_id: AccountId) -> Account | None:
+        """
+        Find an account by its unique identifier.
+
+        Searches for an existing account with the given AccountId.
+        Returns None if no account is found.
+
+        Args:
+            account_id: The AccountId value object to search for
+
+        Returns:
+            Account if found, None otherwise
+
+        Business Rules:
+            - AccountId is the primary key (guaranteed unique)
+            - Returns complete Account aggregate with all properties
+            - Used for account activation workflow
+
+        Implementation Notes:
+            - Use exact match on account.id (UUID v7)
+            - Reconstruct Account entity with all value objects
+            - Return None (not exception) if not found
+
+        Example:
+            >>> account_id = AccountId(UUID("019..."))
+            >>> account = repository.find_by_id(account_id)
+            >>> if account:
+            ...     account.activate()
+            ...     repository.save(account)
         """
         pass
