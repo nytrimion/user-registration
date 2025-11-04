@@ -35,11 +35,15 @@ Usage Example:
     ```
 """
 
-from injector import Module, provider, singleton
+from injector import Binder, Module, provider, singleton
 
+from src.shared.domain.events.event_dispatcher import EventDispatcher
 from src.shared.infrastructure.database.connection import (
     DatabaseConnectionFactory,
     PostgresConnectionFactory,
+)
+from src.shared.infrastructure.events.in_memory_event_dispatcher import (
+    InMemoryEventDispatcher,
 )
 
 
@@ -54,21 +58,38 @@ class InfrastructureModule(Module):
 
     Bindings:
         - DatabaseConnectionFactory → PostgresConnectionFactory (singleton)
+        - EventDispatcher → InMemoryEventDispatcher (singleton)
 
     Singleton Justification:
-        - Connection pool should be created once and reused
-        - Multiple instances would create separate pools (resource waste)
-        - Thread-safe pool can be safely shared across all bounded contexts
+        - Connection pool: Created once and reused (thread-safe pool)
+        - Event dispatcher: Single registry for all event→handler mappings
+        - Shared resources prevent duplication and ensure consistency
 
     Future Bindings:
         - EmailService → ConsoleEmailService (or SMTPEmailService)
-        - EventDispatcher → InMemoryEventDispatcher
         - Logger → StructuredLogger
 
     Testing:
         - Unit tests: Provide mock/fake implementations
         - Integration tests: Use same InfrastructureModule with real DB
     """
+
+    def configure(self, binder: Binder) -> None:
+        """
+        Configure dependency injection bindings.
+
+        This method is called by the injector at startup to register
+        interface→implementation mappings.
+
+        Args:
+            binder: Injector binder for dependency registration
+        """
+        # Event dispatcher (singleton - one registry for entire application)
+        binder.bind(
+            EventDispatcher,  # type: ignore[type-abstract]
+            to=InMemoryEventDispatcher,
+            scope=singleton,
+        )
 
     @singleton
     @provider
