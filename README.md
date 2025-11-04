@@ -79,23 +79,45 @@ src/
 
 ### Key Design Decisions
 
-#### 1. Asynchronous Code Generation
+#### 1. Event-Driven Architecture with Synchronous MVP
 
 **Flow:**
-1. `POST /accounts` creates account (synchronous)
-2. `AccountCreated` event emitted
-3. Event handler generates code and sends email (asynchronous)
+1. `POST /accounts` creates account and emits `AccountCreated` event
+2. Event handler generates activation code and sends email
+3. HTTP response returns after event handler completes
 
-**Rationale:**
-- Code generated just before email sending minimizes time window loss
-- Handles message broker latency gracefully
-- User gets maximum 60 seconds regardless of queue delays
+**Current Implementation (MVP):**
+- **Synchronous EventDispatcher**: Event handler executes immediately in same thread
+- **Trade-off**: HTTP response blocks until email is sent (~100-500ms SMTP latency)
+- **Rationale**: Demonstrates clean architecture (interface vs implementation) while avoiding threading complexity for test technique scope
 
-**Benefits:**
+**Architecture Decision Record (ADR):**
+```
+Problem: Event handlers (email sending) should ideally execute asynchronously
+Decision: Use EventDispatcher interface with synchronous implementation for MVP
+Trade-offs: Accepted latency for faster implementation and simpler testing
+Evolution Path: Replace InMemoryEventDispatcher with AsyncEventDispatcher (Queue + Thread)
+```
+
+**Future Evolution (Production):**
+```python
+class AsyncEventDispatcher(EventDispatcher):
+    """Asynchronous event dispatcher using background worker thread."""
+    def __init__(self, injector: Injector):
+        self._queue: Queue[object] = Queue()
+        self._worker = Thread(target=self._process_events, daemon=True)
+        self._worker.start()
+
+    def dispatch(self, event: object) -> None:
+        self._queue.put(event)  # Non-blocking return
+```
+
+**Benefits of Event-Driven Design:**
 - **Scalability**: Decouples account creation from email delivery (survives SMTP outages)
 - **Resilience**: Account creation succeeds even if email service temporarily fails
-- **User Experience**: Fast API response time (~50ms vs ~500ms with synchronous email)
+- **Clean Architecture**: EventDispatcher interface stable, implementation swappable
 - **Observability**: Separate metrics and monitoring for account creation vs email delivery
+- **Code generated just before sending**: Minimizes 60-second expiration window loss
 
 #### 2. DDD Encapsulation with @property
 
@@ -619,7 +641,7 @@ git checkout -b feat/your-feature-name
 # Run quality checks locally (recommended)
 docker-compose run --rm api poetry run black src tests
 docker-compose run --rm api poetry run ruff check src tests
-docker-compose run --rm api poetry run mypy src
+docker-compose run --rm api poetry run mypy src tests
 docker-compose run --rm api pytest
 
 # Commit with conventional commits

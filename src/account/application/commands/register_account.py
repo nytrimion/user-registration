@@ -2,33 +2,34 @@
 RegisterAccount command and handler.
 
 This module implements the user registration use case, which creates a new
-account with email uniqueness validation.
+account with email uniqueness validation and emits AccountCreated event.
 
 Business Rules:
     - Email addresses must be unique across all accounts
     - Password is hashed before persistence (handled by Password VO)
     - Account is created in inactive state (is_verified = False)
+    - AccountCreated event emitted after successful persistence
 
 Command Flow:
     1. Receive RegisterAccountCommand (email, password)
     2. Check if email already exists (business rule validation)
     3. Create Account aggregate via factory method
     4. Persist account via repository
-
-Future Enhancement:
-    - AccountCreated domain event will be emitted for async activation code
-      generation (implemented in separate PR)
+    5. Dispatch AccountCreated event (triggers activation code generation)
 """
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from injector import inject
 
 from src.account.domain.entities.account import Account
+from src.account.domain.events.account_created import AccountCreated
 from src.account.domain.exceptions import EmailAlreadyExistsError
 from src.account.domain.repositories.account_repository import AccountRepository
 from src.account.domain.value_objects.email import Email
 from src.account.domain.value_objects.password import Password
+from src.shared.domain.events.event_dispatcher import EventDispatcher
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,7 @@ class RegisterAccountHandler:
     """
 
     @inject
-    def __init__(self, repository: AccountRepository) -> None:
+    def __init__(self, repository: AccountRepository, dispatcher: EventDispatcher) -> None:
         """
         Initialize handler with injected dependencies.
 
@@ -85,8 +86,10 @@ class RegisterAccountHandler:
 
         Args:
             repository: Account repository abstraction (injected)
+            dispatcher: Event dispatcher for domain events (injected)
         """
         self._repository = repository
+        self._dispatcher = dispatcher
 
     def handle(self, command: RegisterAccountCommand) -> None:
         """
@@ -104,7 +107,7 @@ class RegisterAccountHandler:
 
         Side Effects:
             - Creates new account record in database
-            - Future: Emits AccountCreated domain event for async processing
+            - Emits AccountCreated domain event (triggers activation workflow)
 
         Implementation Notes:
             This handler uses a Check-Then-Insert pattern for email uniqueness
@@ -130,5 +133,12 @@ class RegisterAccountHandler:
 
         self._repository.create(account)
 
-        # Future: Emit AccountCreated event for async activation code generation
-        # event_dispatcher.dispatch(AccountCreated(account_id=account.id))
+        # Emit AccountCreated domain event
+        # Event handler will generate activation code and send email
+        self._dispatcher.dispatch(
+            AccountCreated(
+                account_id=account.id,
+                email=account.email,
+                occurred_at=datetime.now(UTC),
+            )
+        )

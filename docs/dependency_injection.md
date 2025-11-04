@@ -621,16 +621,66 @@ class AccountCreatedHandler:
 **Event Dispatcher (Non-HTTP Context):**
 
 ```python
-# src/shared/infrastructure/events/event_dispatcher.py
-from injector import Injector
+# src/shared/infrastructure/events/in_memory_event_dispatcher.py
+from typing import Dict, Type
+from injector import Injector, inject
 
-class EventDispatcher:
+from src.shared.domain.events.event_dispatcher import EventDispatcher
+
+
+class InMemoryEventDispatcher(EventDispatcher):
     """
-    Simple synchronous event dispatcher.
+    Synchronous in-memory event dispatcher.
+
+    ARCHITECTURE DECISION RECORD (ADR):
+
+    Problem:
+        Event handlers (e.g., send activation email) should ideally execute
+        asynchronously to avoid blocking HTTP responses during I/O operations.
+
+    Decision:
+        Use EventDispatcher interface with synchronous implementation for MVP.
+
+    Rationale:
+        - Demonstrates clean architecture (interface vs implementation separation)
+        - Faster to implement and test (no threading/queue complexity)
+        - Allows focus on core business logic (activation code, email service)
+        - Easy to swap later: InMemoryEventDispatcher → AsyncEventDispatcher
+
+    Trade-offs:
+        - HTTP POST /accounts blocks until email is sent (~100-500ms SMTP latency)
+        - Acceptable for test technique scope and demonstration purposes
+        - Production evolution: replace with async implementation (see below)
+
+    Future Evolution Path:
+        from queue import Queue
+        from threading import Thread
+
+        class AsyncEventDispatcher(EventDispatcher):
+            @inject
+            def __init__(self, injector: Injector):
+                self._injector = injector
+                self._handlers: Dict[Type, Type] = {}
+                self._queue: Queue[object] = Queue()
+                self._worker = Thread(target=self._process_events, daemon=True)
+                self._worker.start()
+
+            def dispatch(self, event: object) -> None:
+                self._queue.put(event)  # Non-blocking return
+
+            def _process_events(self) -> None:
+                while True:
+                    event = self._queue.get()
+                    handler_type = self._handlers.get(type(event))
+                    if handler_type:
+                        handler = self._injector.get(handler_type)
+                        handler.handle(event)
+                    self._queue.task_done()
 
     Uses injector to resolve event handlers outside HTTP context.
     """
 
+    @inject
     def __init__(self, injector: Injector):
         """
         Initialize dispatcher with injector.
@@ -639,21 +689,24 @@ class EventDispatcher:
             injector: Injector instance for resolving handlers
         """
         self._injector = injector
-        self._handlers: dict[type, type] = {}
+        self._handlers: Dict[Type, Type] = {}
 
-    def register(self, event_type: type, handler_type: type) -> None:
+    def register(self, event_type: Type, handler_type: Type) -> None:
         """
-        Register event handler.
+        Register event handler for given event type.
 
         Args:
-            event_type: Domain event class
-            handler_type: Handler class (will be resolved via injector)
+            event_type: Domain event class (e.g., AccountCreated)
+            handler_type: Handler class (e.g., AccountCreatedHandler)
         """
         self._handlers[event_type] = handler_type
 
     def dispatch(self, event: object) -> None:
         """
-        Dispatch event to registered handler.
+        Dispatch event synchronously (blocking).
+
+        Resolves handler via injector and executes immediately.
+        Caller WAITS for handler completion before continuing.
 
         Args:
             event: Domain event instance
@@ -668,15 +721,18 @@ class EventDispatcher:
 from src.account.domain.events.account_created import AccountCreated
 from src.account.application.events.account_created_handler import AccountCreatedHandler
 
-dispatcher = EventDispatcher(injector)
+dispatcher = injector.get(EventDispatcher)  # Resolved via DI
 dispatcher.register(AccountCreated, AccountCreatedHandler)
 
 # In RegisterAccountHandler (after repository.create)
 dispatcher.dispatch(AccountCreated(account.id, account.email))
 ```
 
-**Critical Advantage:**
+**Critical Advantages:**
 - ✅ `AccountCreatedHandler` injected **without FastAPI `Depends()`**
+- ✅ **Framework-agnostic**: Works in HTTP, CLI, background jobs, tests
+- ✅ **Clean Architecture**: Interface stable, implementation swappable
+- ✅ **Pragmatic**: Synchronous MVP, async evolution path documented
 - ✅ Works in background tasks, CLI scripts, scheduled jobs
 - ✅ Same DI mechanism across all contexts (HTTP + non-HTTP)
 

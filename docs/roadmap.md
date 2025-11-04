@@ -201,13 +201,25 @@ API endpoint for account creation.
 
 ## Feature: Account Activation
 
-### Domain - Account Created Event ⏳
+### Infrastructure - Event System & AccountCreated Event ✅
 **Branch:** `feat/account-created-event`
 
-Domain event emitted after account creation.
+Complete event system with AccountCreated event emission after account creation.
 
-**Deliverables:**
-- AccountCreated event + update RegisterAccount to emit event
+**Completed:**
+- ✅ AccountCreated domain event (immutable dataclass with account_id, email, occurred_at)
+- ✅ EventDispatcher interface (abstract base class in shared domain)
+- ✅ InMemoryEventDispatcher implementation (synchronous dispatcher with handler registry)
+- ✅ RegisterAccountHandler updated to inject EventDispatcher and dispatch AccountCreated event
+- ✅ Unit tests for event emission and dispatcher (3 tests for event, 5 tests for dispatcher, 1 new test for handler)
+- ✅ DI integration (EventDispatcher registered as singleton in InfrastructureModule)
+- ✅ Documentation updated (README.md, docs/dependency_injection.md with ADR)
+
+**Architecture:**
+- Handler emits event directly (not stored in entity)
+- EventDispatcher resolves handlers via injector (works outside HTTP context)
+- Synchronous implementation for MVP (ADR documented for future async evolution)
+- Following docs/dependency_injection.md event handler pattern
 
 ---
 
@@ -261,6 +273,24 @@ Email service abstraction with console implementation.
 
 ---
 
+### Application - AccountCreatedHandler (Event Handler) ⏳
+**Branch:** `feat/account-created-handler`
+
+Event handler that reacts to AccountCreated event by generating activation code and sending email.
+
+**Deliverables:**
+- AccountCreatedHandler (injects ActivationCodeRepository + EmailService)
+- Generates 4-digit activation code with 60s expiration
+- Sends email with code (console output for now)
+- Unit tests with mocked dependencies
+- Register handler in EventDispatcher
+
+**Dependencies:**
+- Requires: ActivationCode VO, ActivationCodeRepository, EmailService
+- Called by: EventDispatcher when AccountCreated is dispatched
+
+---
+
 ### Application - ActivateAccount Use Case ⏳
 **Branch:** `feat/activate-account-use-case`
 
@@ -268,16 +298,6 @@ Use case for account activation with code verification.
 
 **Deliverables:**
 - ActivateAccount use case + unit tests with mocks
-
----
-
-### Infrastructure - Event Dispatcher & Handler ⏳
-**Branch:** `feat/event-dispatcher`
-
-Event system triggering code generation and email.
-
-**Deliverables:**
-- Event dispatcher + AccountCreatedHandler (generates code + sends email) + tests
 
 ---
 
