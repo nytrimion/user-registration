@@ -304,21 +304,35 @@ Email service abstraction with logger-based implementation for MVP.
 
 ---
 
-### Application - AccountCreatedHandler (Event Handler) ⏳
+### Application - AccountCreatedHandler (Event Handler) ✅
 **Branch:** `feat/account-created-handler`
+**Status:** COMPLETED
 
 Event handler that reacts to AccountCreated event by generating activation code and sending email.
 
-**Deliverables:**
-- AccountCreatedHandler (injects ActivationCodeRepository + EmailService)
-- Generates 4-digit activation code with 60s expiration
-- Sends email with code (console output for now)
-- Unit tests with mocked dependencies
-- Register handler in EventDispatcher
+**Completed:**
+- ✅ AccountCreatedHandler event handler (application layer)
+- ✅ Activation code generation (AccountActivation.create_for_account)
+- ✅ Activation code persistence (AccountActivationRepository.save)
+- ✅ HTML email construction with clickable activation link
+- ✅ Email sending via EmailService (LoggerEmailService)
+- ✅ 11 unit tests (100% coverage, mocked dependencies)
+- ✅ Event handler registration in main.py (EventDispatcher)
+- ✅ README documentation (activation user flow)
+- ✅ All quality tools passing (Black, Ruff, Mypy)
 
-**Dependencies:**
-- Requires: ActivationCode VO, ActivationCodeRepository, EmailService
-- Called by: EventDispatcher when AccountCreated is dispatched
+**Implementation Details:**
+- Workflow: Generate code → Save to DB → Build link → Send email
+- Base URL: http://localhost:8000 (hardcoded for MVP, TODO: env var)
+- Email format: HTML with styled button + code fallback + 60s warning
+- Link format: /activate/{accountId}?code={code}
+- Synchronous execution: Handler blocks HTTP response (documented trade-off)
+- Error propagation: Exceptions bubble to EventDispatcher
+
+**Architecture Decisions:**
+- Save BEFORE email: Code in DB before user receives email (resilience)
+- Handler registration: main.py (acceptable for 1 BC, scalable pattern documented)
+- HTML email: User-friendly clickable link + manual code fallback
 
 ---
 

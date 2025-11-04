@@ -119,7 +119,54 @@ class AsyncEventDispatcher(EventDispatcher):
 - **Observability**: Separate metrics and monitoring for account creation vs email delivery
 - **Code generated just before sending**: Minimizes 60-second expiration window loss
 
-#### 2. DDD Encapsulation with @property
+#### 2. Account Activation User Flow
+
+**Flow:**
+1. User receives activation email with clickable link containing AccountId and temporary code
+2. Link redirects to dedicated activation page (frontend HTML form)
+3. Activation page submits `POST /accounts/{accountId}/activate?code={code}` with Basic Auth
+4. Endpoint validates Basic Auth credentials + temporary code (60s expiration)
+5. Account activated if both validations succeed
+
+**Email Link Structure:**
+```
+http://localhost:8000/activate/{accountId}?code={code}
+```
+
+**Activation Page Responsibilities:**
+- Display activation form with code pre-filled (read-only)
+- Prompt user for Basic Auth credentials (user + password)
+- Submit POST request to API endpoint with credentials in Authorization header
+- Handle success/error responses (expired code, invalid credentials, already activated)
+
+**API Endpoint Security:**
+```
+POST /accounts/{accountId}/activate
+Authorization: Basic {base64(user:password)}
+Body:
+{
+  "ActivationCode": "{code}"
+}
+```
+
+**Validation Order:**
+1. **Basic Auth**: Verify email/password match account credentials
+2. **Temporary Code**: Validate 4-digit code is correct and not expired (60s window)
+3. **Idempotency**: Allow activation if account already activated (return 200 instead of 409)
+
+**Rationale:**
+- **Clickable Link**: User-friendly experience (one click from email to activation page)
+- **Basic Auth**: Adds security layer (confirms user owns the email + knows password)
+- **Temporary Code**: Time-bound token prevents replay attacks after 60 seconds
+- **Frontend Page**: Avoids Basic Auth in URL (security best practice - credentials in header, not query params)
+
+**Security Benefits:**
+- **No credentials in email**: Link doesn't expose password (only temporary code)
+- **No credentials in URL**: Browser history doesn't log password (Basic Auth header)
+- **Short expiration**: 60-second code window limits attack surface
+- **Dual validation**: Requires both temporary code AND account credentials
+
+#### 3. DDD Encapsulation with @property
 
 **Pattern:**
 ```python
@@ -139,7 +186,7 @@ repository.save(account)
 - **Explicitness**: Clear intent through method names (`activate()` vs property assignment)
 - **Maintainability**: Business logic changes isolated to entity methods
 
-#### 3. Separate Repository for Activation Codes
+#### 4. Separate Repository for Activation Codes
 
 Two distinct repositories with clear responsibilities:
 - **`AccountRepository`**: Manages account lifecycle (creation, retrieval, activation status)
@@ -156,7 +203,7 @@ Two distinct repositories with clear responsibilities:
 - **Performance**: Aggressive TTL/cleanup strategies for codes without impacting account data
 - **Team Collaboration**: Multiple developers can work on each repository without merge conflicts
 
-#### 4. Activation Code Primary Key: account_id (YAGNI Principle)
+#### 5. Activation Code Primary Key: account_id (YAGNI Principle)
 
 **Schema:**
 ```sql
@@ -187,7 +234,7 @@ ALTER TABLE account_activation_code ADD COLUMN id UUID DEFAULT account_id;
 -- UUID v7 from account preserves timestamp ordering
 ```
 
-#### 5. Framework-Agnostic Dependency Injection
+#### 6. Framework-Agnostic Dependency Injection
 
 **Technology:** `injector` + `fastapi-injector` instead of FastAPI's native `Depends()`
 
@@ -230,7 +277,7 @@ class AccountCreatedHandler:
 
 **Documentation:** See [`docs/dependency_injection.md`](docs/dependency_injection.md) for complete strategy and examples.
 
-#### 6. No ORM - Raw SQL
+#### 7. No ORM - Raw SQL
 
 Direct SQL queries using psycopg2 without Object-Relational Mapping.
 
