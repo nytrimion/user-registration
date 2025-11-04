@@ -223,7 +223,7 @@ Complete event system with AccountCreated event emission after account creation.
 
 ---
 
-### Domain - Account Activation (VO + Entity + Repository Interface) ⏳
+### Domain - Account Activation (VO + Entity + Repository Interface) ✅
 **Branch:** `feat/activation-code-domain`
 
 Complete domain layer for account activation workflow.
@@ -233,18 +233,20 @@ Merged ActivationCode VO and Repository interface PRs into single domain slice.
 This ensures atomic domain logic coherence (VO + Entity + Repository contract
 validated together) and facilitates review of complete business rules.
 
-**Deliverables:**
-- ActivationCode VO (4-digit code generation and validation)
-- AccountActivation Entity (aggregate with account_id as identity)
-- AccountActivationRepository interface (save, find_by_account_id, delete)
-- Unit tests for VO (generation, validation, immutability)
-- Unit tests for Entity (factory method, expiration logic, encapsulation)
+**Completed:**
+- ✅ ActivationCode VO (4-digit code generation and validation with CODE_LENGTH constant)
+- ✅ AccountActivation Entity (composite PK account_id, @classmethod factory, encapsulation)
+- ✅ AccountActivationRepository interface (save with UPSERT, find_by_account_id, delete)
+- ✅ 14 unit tests for ActivationCode VO (100% coverage)
+- ✅ 12 unit tests for AccountActivation entity (100% coverage)
+- ✅ All quality tools passing (Black, Ruff, Mypy strict mode)
 
 **Architecture:**
 - AccountActivation = Entity with composite PK (account_id)
 - ActivationCode = VO (immutable, no identity, part of entity)
 - Expiration logic in entity (60 seconds from creation)
 - Repository persists entity (DDD pattern: Repository → Entity, not VO)
+- PostgreSQL UPSERT support (INSERT ... ON CONFLICT ... DO UPDATE)
 
 ---
 
