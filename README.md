@@ -377,30 +377,47 @@ Create a new user account and trigger verification email.
 
 ---
 
-### `POST /accounts/activate`
+### `POST /accounts/{account_id}/activate`
 
 Activate account using 4-digit verification code.
 
-**Authentication:** Basic Auth (email:password)
+**Authentication:** Basic Auth (API credentials)
+- Default username: `api`
+- Default password: `secret`
+- Configurable via environment variables: `API_USERNAME`, `API_PASSWORD`
 
-**Request:**
+**Path Parameters:**
+- `account_id` (UUID): The account identifier to activate
+
+**Request Body:**
 ```json
 {
   "code": "1234"
 }
 ```
 
-**Response:** `200 OK`
-```json
-{
-  "message": "Account successfully activated"
-}
+**Response:** `200 OK` (no content)
+
+**Example:**
+```bash
+# Using curl with default credentials
+curl -X POST "http://localhost:8000/accounts/{account_id}/activate" \
+  -u api:secret \
+  -H "Content-Type: application/json" \
+  -d '{"code": "1234"}'
+
+# With custom credentials (if configured via env vars)
+curl -X POST "http://localhost:8000/accounts/{account_id}/activate" \
+  -u custom_user:custom_pass \
+  -H "Content-Type: application/json" \
+  -d '{"code": "1234"}'
 ```
 
 **Error Responses:**
-- `401 Unauthorized`: Invalid credentials
-- `400 Bad Request`: Invalid or expired code
-- `404 Not Found`: No pending activation code
+- `401 Unauthorized`: Invalid API credentials or missing Authorization header
+- `400 Bad Request`: Invalid or expired activation code
+- `404 Not Found`: Account or activation code not found
+- `422 Unprocessable Entity`: Invalid UUID format or invalid code format (non-numeric)
 
 ## Database Schema
 
