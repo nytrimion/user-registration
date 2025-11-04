@@ -281,13 +281,26 @@ as PostgresAccountRepository (line 142-150).
 
 ---
 
-### Infrastructure - Email Service ⏳
+### Infrastructure - Email Service ✅
 **Branch:** `feat/email-service`
 
-Email service abstraction with console implementation.
+Email service abstraction with logger-based implementation for MVP.
 
-**Deliverables:**
-- EmailService interface + ConsoleEmailService + unit tests
+**Completed:**
+- ✅ EmailMessage DTO (immutable, default from_email, HTML body support)
+- ✅ EmailService interface (application layer abstraction)
+- ✅ LoggerEmailService implementation (structured logging, single log entry)
+- ✅ 8 unit tests (100% coverage, caplog validation)
+- ✅ Dependency injection configuration (InfrastructureModule binding)
+- ✅ All quality tools passing (Black, Ruff, Mypy)
+
+**Implementation Details:**
+- DTO: EmailMessage with to_email, subject, body, from_email (default: noreply@example.com)
+- Interface: EmailService in shared/application/services (not domain - infrastructure concern)
+- Implementation: LoggerEmailService with structured logging (pipe-separated fields)
+- Logging format: Single INFO entry with all fields (parseable by log aggregators)
+- DI: Singleton binding in InfrastructureModule (stateless, thread-safe)
+- Future: Replaceable with SMTP/SendGrid implementation via DI
 
 ---
 
