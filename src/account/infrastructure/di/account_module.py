@@ -37,7 +37,13 @@ Usage Example:
 
 from injector import Module, provider, singleton
 
+from src.account.domain.repositories.account_activation_repository import (
+    AccountActivationRepository,
+)
 from src.account.domain.repositories.account_repository import AccountRepository
+from src.account.infrastructure.persistence.postgres_account_activation_repository import (
+    PostgresAccountActivationRepository,
+)
 from src.account.infrastructure.persistence.postgres_account_repository import (
     PostgresAccountRepository,
 )
@@ -53,9 +59,10 @@ class AccountModule(Module):
 
     Bindings:
         - AccountRepository → PostgresAccountRepository (singleton)
+        - AccountActivationRepository → PostgresAccountActivationRepository (singleton)
 
     Singleton Justification:
-        - Repository is stateless (no mutable state)
+        - Repositories are stateless (no mutable state)
         - Connection pool managed by DatabaseConnectionFactory (injected)
         - Thread-safe for concurrent requests
         - Single instance reduces memory overhead
@@ -106,6 +113,46 @@ class AccountModule(Module):
             @inject
             def __init__(self, repository: AccountRepository):
                 self._repository = repository  # Gets PostgresAccountRepository
+            ```
+        """
+        return repository
+
+    @singleton
+    @provider
+    def provide_account_activation_repository(
+        self, repository: PostgresAccountActivationRepository
+    ) -> AccountActivationRepository:
+        """
+        Provide singleton AccountActivationRepository for dependency injection.
+
+        Binds the domain interface (AccountActivationRepository) to the infrastructure
+        implementation (PostgresAccountActivationRepository). This preserves Clean
+        Architecture by keeping the domain layer independent of infrastructure.
+
+        Args:
+            repository: PostgresAccountActivationRepository instance (auto-injected)
+                Injector automatically resolves PostgresAccountActivationRepository
+                by injecting DatabaseConnectionFactory into its constructor
+
+        Returns:
+            AccountActivationRepository: Singleton instance of PostgresAccountActivationRepository
+
+        Lifecycle:
+            - Created: Application startup (first injection request)
+            - Reused: All subsequent injections get same instance
+            - Destroyed: Application shutdown
+
+        Dependency Chain:
+            AccountActivationRepository
+            └─> PostgresAccountActivationRepository(@inject)
+                └─> DatabaseConnectionFactory (from InfrastructureModule)
+
+        Example:
+            ```python
+            # In event handler
+            @inject
+            def __init__(self, activation_repo: AccountActivationRepository):
+                self._activation_repo = activation_repo  # Gets PostgresAccountActivationRepository
             ```
         """
         return repository
