@@ -176,13 +176,26 @@ avoiding late discovery of migration issues and ensuring atomicity.
 
 ---
 
-### Infrastructure - POST /accounts Endpoint ⏳
+### Infrastructure - POST /accounts Endpoint ✅
 **Branch:** `feat/post-accounts-endpoint`
 
 API endpoint for account creation.
 
-**Deliverables:**
-- POST /accounts controller + request/response models + integration tests
+**Completed:**
+- ✅ RegisterAccountRequest Pydantic model (email, password validation)
+- ✅ account_controller.py with POST /accounts route (FastAPI APIRouter)
+- ✅ Dependency injection integration (AccountModule, RegisterAccountHandler)
+- ✅ Error handling (400 domain validation, 409 duplicate email, 422 Pydantic)
+- ✅ OpenAPI documentation with response examples (400, 409, 422)
+- ✅ 8 integration tests (201 success, duplicate email, validation errors, whitespace trimming)
+- ✅ All quality tools passing (Black, Ruff, Mypy on src + tests)
+- ✅ 100 tests passing, 98% project coverage
+
+**Implementation Notes:**
+- HTTP 201 Created with empty response body (no Location header)
+- CQRS handler remains void (no return value)
+- Two-layer validation: Pydantic (422) + Domain VOs (400)
+- Email normalization and whitespace trimming validated in tests
 
 ---
 
