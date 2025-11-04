@@ -223,43 +223,56 @@ Complete event system with AccountCreated event emission after account creation.
 
 ---
 
-### Domain - ActivationCode Value Object ⏳
-**Branch:** `feat/activation-code-vo`
+### Domain - Account Activation (VO + Entity + Repository Interface) ⏳
+**Branch:** `feat/activation-code-domain`
 
-4-digit code with expiration logic.
+Complete domain layer for account activation workflow.
+
+**Rationale:**
+Merged ActivationCode VO and Repository interface PRs into single domain slice.
+This ensures atomic domain logic coherence (VO + Entity + Repository contract
+validated together) and facilitates review of complete business rules.
 
 **Deliverables:**
-- ActivationCode VO + generation + expiration logic + unit tests
+- ActivationCode VO (4-digit code generation and validation)
+- AccountActivation Entity (aggregate with account_id as identity)
+- AccountActivationRepository interface (save, find_by_account_id, delete)
+- Unit tests for VO (generation, validation, immutability)
+- Unit tests for Entity (factory method, expiration logic, encapsulation)
+
+**Architecture:**
+- AccountActivation = Entity with composite PK (account_id)
+- ActivationCode = VO (immutable, no identity, part of entity)
+- Expiration logic in entity (60 seconds from creation)
+- Repository persists entity (DDD pattern: Repository → Entity, not VO)
 
 ---
 
-### Domain - ActivationCodeRepository Interface ⏳
-**Branch:** `feat/activation-code-repository-interface`
+### Infrastructure - PostgresAccountActivationRepository Implementation ⏳
+**Branch:** `feat/account-activation-repository-implementation`
 
-Repository contract for activation codes.
+PostgreSQL repository implementation with database migration and integration tests.
 
-**Deliverables:**
-- ActivationCodeRepository interface (save, find_by_account_id)
-
----
-
-### Infrastructure - Database Migration (Activation Code) ⏳
-**Branch:** `feat/activation-code-table-migration`
-
-SQL schema for activation_code table.
+**Rationale:**
+Merged "Database Migration" and "AccountActivationRepository" PRs into single vertical
+slice. This allows immediate validation of SQL schema through repository tests,
+avoiding late discovery of migration issues and ensuring atomicity. Same pattern
+as PostgresAccountRepository (line 142-150).
 
 **Deliverables:**
-- Migration script, account_activation_code table
+- SQL migration script (account_activation_code table: account_id PK, code, expires_at, audit columns)
+- PostgresAccountActivationRepository implementation (save, find_by_account_id, delete methods with raw SQL)
+- Bidirectional mappers (AccountActivation entity ↔ DB row with type conversions)
+- Unit tests for mappers (100% coverage, AccountId/string conversion validation)
+- Integration tests for repository (100% coverage, real PostgreSQL)
+- All quality tools passing (Black, Ruff, Mypy on src + tests)
 
----
-
-### Infrastructure - PostgresActivationCodeRepository ⏳
-**Branch:** `feat/postgres-activation-code-repository`
-
-Repository implementation for activation codes.
-
-**Deliverables:**
-- PostgresActivationCodeRepository + integration tests
+**Implementation Order:**
+1. Migration SQL + connection pool reuse (existing infrastructure)
+2. Repository implementation with raw SQL queries (psycopg2, parameterized)
+3. Entity-to-row mappers (preserving value objects, expiration timestamp handling)
+4. Integration tests (pytest + Docker PostgreSQL service)
+5. Unit tests for mappers (round-trip validation)
 
 ---
 
