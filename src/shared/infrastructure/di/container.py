@@ -37,6 +37,7 @@ Usage Example:
 
 from injector import Binder, Module, provider, singleton
 
+from src.shared.application.services.email_service import EmailService
 from src.shared.domain.events.event_dispatcher import EventDispatcher
 from src.shared.infrastructure.database.connection import (
     DatabaseConnectionFactory,
@@ -44,6 +45,9 @@ from src.shared.infrastructure.database.connection import (
 )
 from src.shared.infrastructure.events.in_memory_event_dispatcher import (
     InMemoryEventDispatcher,
+)
+from src.shared.infrastructure.services.logger_email_service import (
+    LoggerEmailService,
 )
 
 
@@ -59,14 +63,16 @@ class InfrastructureModule(Module):
     Bindings:
         - DatabaseConnectionFactory → PostgresConnectionFactory (singleton)
         - EventDispatcher → InMemoryEventDispatcher (singleton)
+        - EmailService → LoggerEmailService (singleton)
 
     Singleton Justification:
         - Connection pool: Created once and reused (thread-safe pool)
         - Event dispatcher: Single registry for all event→handler mappings
+        - Email service: Stateless, thread-safe, no per-request state
         - Shared resources prevent duplication and ensure consistency
 
     Future Bindings:
-        - EmailService → ConsoleEmailService (or SMTPEmailService)
+        - EmailService → SMTPEmailService or SendGridEmailService (production)
         - Logger → StructuredLogger
 
     Testing:
@@ -88,6 +94,13 @@ class InfrastructureModule(Module):
         binder.bind(
             EventDispatcher,  # type: ignore[type-abstract]
             to=InMemoryEventDispatcher,
+            scope=singleton,
+        )
+
+        # Email service (singleton - stateless logger implementation)
+        binder.bind(
+            EmailService,  # type: ignore[type-abstract]
+            to=LoggerEmailService,
             scope=singleton,
         )
 
