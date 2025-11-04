@@ -240,6 +240,7 @@ validated together) and facilitates review of complete business rules.
 - ✅ 14 unit tests for ActivationCode VO (100% coverage)
 - ✅ 12 unit tests for AccountActivation entity (100% coverage)
 - ✅ All quality tools passing (Black, Ruff, Mypy strict mode)
+- ✅ AccountRepository refactored: create() → save() with UPSERT validation
 
 **Architecture:**
 - AccountActivation = Entity with composite PK (account_id)
@@ -247,6 +248,7 @@ validated together) and facilitates review of complete business rules.
 - Expiration logic in entity (60 seconds from creation)
 - Repository persists entity (DDD pattern: Repository → Entity, not VO)
 - PostgreSQL UPSERT support (INSERT ... ON CONFLICT ... DO UPDATE)
+- UPSERT pattern validated across Account and AccountActivation repositories
 
 ---
 

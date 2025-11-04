@@ -71,7 +71,7 @@ def test_create_account_persists_to_database(
     test_password: Password,
 ) -> None:
     """
-    PostgresAccountRepository.create() should persist account to database.
+    PostgresAccountRepository.save() should persist account to database.
 
     Validates:
         - Account created successfully
@@ -82,7 +82,7 @@ def test_create_account_persists_to_database(
     account = Account.create(test_email, test_password)
 
     # Act
-    repository.create(account)  # Commits automatically
+    repository.save(account)  # Commits automatically
 
     # Assert
     found_account = repository.find_by_email(test_email)
@@ -97,7 +97,7 @@ def test_create_account_with_duplicate_email_raises_integrity_error(
     test_password: Password,
 ) -> None:
     """
-    PostgresAccountRepository.create() should raise IntegrityError for duplicate email.
+    PostgresAccountRepository.save() should raise IntegrityError for duplicate email.
 
     Validates:
         - UNIQUE constraint on email is enforced
@@ -109,11 +109,11 @@ def test_create_account_with_duplicate_email_raises_integrity_error(
     account2 = Account.create(test_email, test_password)  # Same email, different ID
 
     # Act & Assert
-    repository.create(account1)  # Commits automatically
+    repository.save(account1)  # Commits automatically
 
     # Attempt to create second account with same email
     with pytest.raises(IntegrityError):
-        repository.create(account2)
+        repository.save(account2)
 
 
 def test_find_by_email_returns_account_when_found(
@@ -131,7 +131,7 @@ def test_find_by_email_returns_account_when_found(
     """
     # Arrange
     account = Account.create(test_email, test_password)
-    repository.create(account)  # Commits automatically
+    repository.save(account)  # Commits automatically
 
     # Act
     found_account = repository.find_by_email(test_email)
@@ -184,7 +184,7 @@ def test_round_trip_preserves_account_data(
     original_is_activated = original_account.is_activated
 
     # Act: Save to database (commits automatically)
-    repository.create(original_account)
+    repository.save(original_account)
 
     # Act: Load from database
     retrieved_account = repository.find_by_email(test_email)
@@ -220,7 +220,7 @@ def test_find_by_email_is_case_insensitive(
     unique_email_upper = f"TEST-{int(time.time() * 1000)}@EXAMPLE.COM"
     email_uppercase = Email(unique_email_upper)
     account = Account.create(email_uppercase, test_password)
-    repository.create(account)  # Commits automatically
+    repository.save(account)  # Commits automatically
 
     # Act: Search with different case (Email VO normalizes both to lowercase)
     found_account = repository.find_by_email(Email(unique_email_upper.lower()))
