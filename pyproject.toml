@@ -72,6 +72,7 @@ ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"**/http/*_controller.py" = ["B008"]  # Injected() in defaults is fastapi-injector pattern
 
 [tool.mypy]
 python_version = "3.14"
