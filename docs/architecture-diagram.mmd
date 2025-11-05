@@ -1,40 +1,49 @@
 graph TB
     subgraph "Presentation Layer"
         API[FastAPI Controllers]
+        Auth[validate_api_credentials<br/>Basic Auth Utility]
     end
 
     subgraph "Application Layer"
-        UC1[RegisterAccount<br/>Use Case]
-        UC2[ActivateAccount<br/>Use Case]
+        UC1[RegisterAccount<br/>Command + Handler]
+        UC2[ActivateAccount<br/>Command + Handler]
         EH[AccountCreatedHandler<br/>Event Handler]
         IEmail[EmailService<br/>Interface]
     end
 
     subgraph "Domain Layer"
         Account[Account<br/>Entity]
+        AccountActivation[AccountActivation<br/>Entity]
         Email[Email<br/>Value Object]
         Password[Password<br/>Value Object]
+        AccountId[AccountId<br/>Value Object]
         ActivationCode[ActivationCode<br/>Value Object]
         Event[AccountCreated<br/>Domain Event]
+        Exceptions[Domain Exceptions<br/>exceptions.py]
         IAccountRepo[AccountRepository<br/>Interface]
-        ICodeRepo[ActivationCodeRepository<br/>Interface]
+        IActivationRepo[AccountActivationRepository<br/>Interface]
     end
 
     subgraph "Infrastructure Layer"
         PostgresAccountRepo[PostgresAccountRepository]
-        PostgresCodeRepo[PostgresActivationCodeRepository]
-        ConsoleEmail[ConsoleEmailService]
+        PostgresActivationRepo[PostgresAccountActivationRepository]
+        LoggerEmail[LoggerEmailService]
+        EventDispatcher[InMemoryEventDispatcher]
         DB[(PostgreSQL)]
+        DIContainer[ApplicationContainer<br/>DI Setup]
     end
 
     subgraph "External"
         User((User))
-        SMTP[Email Service<br/>Third Party]
+        SMTP[Email Service<br/>Future: SMTP/SendGrid]
     end
 
     %% User interactions
-    User -->|POST /accounts| API
-    User -->|POST /accounts/activate| API
+    User -- "POST /accounts" --> API
+    User -- "POST /accounts/{id}/activate" --> API
+
+    %% API Security
+    API --> Auth
 
     %% API to Use Cases
     API --> UC1
@@ -43,34 +52,44 @@ graph TB
     %% Use Cases to Domain
     UC1 --> Account
     UC1 --> IAccountRepo
-    UC1 --> Event
+    UC1 --> EventDispatcher
+    EventDispatcher --> Event
 
     UC2 --> IAccountRepo
-    UC2 --> ICodeRepo
+    UC2 --> IActivationRepo
     UC2 --> Account
+    UC2 --> Exceptions
 
     %% Event Handler
     Event -.->|triggers| EH
-    EH --> ICodeRepo
+    EH --> AccountActivation
+    EH --> IActivationRepo
     EH --> IEmail
-    EH --> ActivationCode
 
     %% Domain relationships
     Account --> Email
     Account --> Password
-    ActivationCode --> Email
+    Account --> AccountId
+    AccountActivation --> AccountId
+    AccountActivation --> ActivationCode
 
     %% Infrastructure implementations
     IAccountRepo -.->|implements| PostgresAccountRepo
-    ICodeRepo -.->|implements| PostgresCodeRepo
-    IEmail -.->|implements| ConsoleEmail
+    IActivationRepo -.->|implements| PostgresActivationRepo
+    IEmail -.->|implements| LoggerEmail
+
+    %% Dependency Injection
+    DIContainer -.->|configures| PostgresAccountRepo
+    DIContainer -.->|configures| PostgresActivationRepo
+    DIContainer -.->|configures| LoggerEmail
+    DIContainer -.->|configures| EventDispatcher
 
     %% Database
     PostgresAccountRepo --> DB
-    PostgresCodeRepo --> DB
+    PostgresActivationRepo --> DB
 
     %% External service
-    ConsoleEmail -.->|simulates| SMTP
+    LoggerEmail -.->|logs to console<br/>future: SMTP| SMTP
     SMTP -.->|sends code| User
 
     %% Styling
@@ -79,7 +98,7 @@ graph TB
     classDef infrastructure fill:#90ee90,stroke:#333,stroke-width:2px
     classDef external fill:#ffb6c1,stroke:#333,stroke-width:2px
 
-    class Account,Email,Password,ActivationCode,Event,IAccountRepo,ICodeRepo domain
+    class Account,AccountActivation,Email,Password,AccountId,ActivationCode,Event,Exceptions,IAccountRepo,IActivationRepo domain
     class UC1,UC2,EH,IEmail application
-    class PostgresAccountRepo,PostgresCodeRepo,ConsoleEmail,DB infrastructure
+    class PostgresAccountRepo,PostgresActivationRepo,LoggerEmail,EventDispatcher,DB,DIContainer,Auth infrastructure
     class User,SMTP external
