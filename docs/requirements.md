@@ -2,7 +2,7 @@
 
 ## Context
 
-Dailymotion handles user registrations. To do so, user creates an account and we send a code by email to verify the account.
+The application handles user registrations. To do so, user creates an account and we send a code by email to verify the account.
 
 As a core API developer, you are responsible for building this feature and expose it through API.
 
