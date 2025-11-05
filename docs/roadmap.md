@@ -414,27 +414,36 @@ API endpoint for account activation with Basic Auth security.
 
 ## Finalization
 
-### End-to-End Testing ⏳
-**Branch:** `feat/e2e-tests`
+### End-to-End Testing ⏭️
+**Branch:** `test/e2e-tests`
+**Status:** SKIPPED (prioritized documentation finalization)
 
-Complete user journey validation.
+**Rationale:**
+- Integration tests already cover full HTTP → Domain → Database flow
+- Account creation + activation workflow validated in integration tests
+- E2E tests would duplicate existing coverage with minimal added value for MVP
+- Decision: Skip E2E testing, focus on documentation polish for handoff
 
-**Deliverables:**
+**Original Deliverables (not implemented):**
 - E2E tests (creation → email → activation)
 - Code expiration scenarios
 - Error cases
 
 ---
 
-### Documentation & Architecture ⏳
-**Branch:** `feat/final-documentation`
+### Documentation & Architecture ✅
+**Branch:** `docs/documentation-update`
 
-Polish documentation and diagrams.
+Polish documentation and diagrams for project handoff.
 
-**Deliverables:**
-- Updated README
-- Improved architecture diagram
-- API documentation
+**Completed:**
+- ✅ Fixed database schema documentation (is_activated, updated_at, TIMESTAMPTZ, correct table names)
+- ✅ Corrected repository interface documentation (AccountId value objects, removed non-existent methods)
+- ✅ Clarified Basic Auth purpose (API-level security, not user authentication)
+- ✅ Updated architecture diagram (AccountActivationRepository, LoggerEmailService, all missing components)
+- ✅ Simplified layer structure (consolidated, added shared/ context documentation)
+- ✅ Documented environment variables (database config + API security credentials)
+- ✅ All documentation now reflects actual implementation
 
 ---
 
