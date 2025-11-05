@@ -1,6 +1,6 @@
 # User Registration API
 
-Technical test implementation for account registration with email verification.
+Technical test of Python implementation for account registration with email verification.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -16,7 +16,7 @@ Technical test implementation for account registration with email verification.
 
 ## Overview
 
-REST API for user registration with email-based account activation using a time-limited 4-digit verification code.
+Python REST API for user registration with email-based account activation using a time-limited 4-digit verification code.
 
 ### Features
 - User account creation with email and password
